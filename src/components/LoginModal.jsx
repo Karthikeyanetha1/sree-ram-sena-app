@@ -6,9 +6,9 @@ export const LoginModal = ({ isOpen, onClose }) => {
   const { setRole, role, registerUser, registeredUsers = [], setCurrentUser, currentUser, signOut } = useApp();
   const [activeTab, setActiveTab] = useState('signin'); // 'signin' | 'signup'
 
-  // Sign In State
-  const [email, setEmail] = useState('admin@sreeramsena.org');
-  const [password, setPassword] = useState('••••••••');
+  // Sign In State (Starts completely empty with no pre-filled demo text)
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   
   // Sign Up State
   const [signUpName, setSignUpName] = useState('');
@@ -27,7 +27,14 @@ export const LoginModal = ({ isOpen, onClose }) => {
     setError('');
     setMessage('');
 
-    const found = (registeredUsers || []).find(u => u.email.toLowerCase() === email.toLowerCase());
+    const inputEmailClean = email.trim().toLowerCase();
+
+    if (!inputEmailClean) {
+      setError('Please enter your email address to sign in.');
+      return;
+    }
+
+    const found = (registeredUsers || []).find(u => u.email.toLowerCase() === inputEmailClean);
 
     if (found) {
       if (found.status === 'Pending Approval') {
@@ -42,16 +49,16 @@ export const LoginModal = ({ isOpen, onClose }) => {
         onClose();
       }, 1000);
     } else {
-      // Demo fallback
-      if (email.includes('admin')) {
+      // Recognized Admin Accounts or Custom Credentials
+      if (inputEmailClean.includes('admin') || inputEmailClean === 'karthikeyanetha7@gmail.com') {
         setRole('Super Admin');
-        setCurrentUser({ name: 'Super Admin Officer', email, role: 'Super Admin' });
-      } else if (email.includes('collector')) {
+        setCurrentUser({ name: 'Gurram Karthikeya (Super Admin)', email: inputEmailClean, role: 'Super Admin' });
+      } else if (inputEmailClean.includes('collector')) {
         setRole('Collector');
-        setCurrentUser({ name: 'Ravi Kumar (Collector)', email, role: 'Collector' });
+        setCurrentUser({ name: 'Collector Member', email: inputEmailClean, role: 'Collector' });
       } else {
         setRole('Viewer');
-        setCurrentUser({ name: 'Public Visitor', email, role: 'Viewer' });
+        setCurrentUser({ name: 'Public Visitor', email: inputEmailClean, role: 'Viewer' });
       }
       setMessage(`Signed in successfully`);
       setTimeout(() => {
@@ -175,7 +182,7 @@ export const LoginModal = ({ isOpen, onClose }) => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@sreeramsena.org, collector@sreeramsena.org, or visitor email"
+                    placeholder="Enter your email (e.g. karthikeyanetha7@gmail.com)"
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:border-emerald-500 outline-none"
                   />
                 </div>
@@ -190,6 +197,7 @@ export const LoginModal = ({ isOpen, onClose }) => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:border-emerald-500 outline-none"
                   />
                 </div>
@@ -219,7 +227,7 @@ export const LoginModal = ({ isOpen, onClose }) => {
                   required
                   value={signUpName}
                   onChange={(e) => setSignUpName(e.target.value)}
-                  placeholder="e.g. Ramesh Kumar"
+                  placeholder="e.g. Gurram Karthikeya"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:border-emerald-500 outline-none"
                 />
               </div>
@@ -231,7 +239,7 @@ export const LoginModal = ({ isOpen, onClose }) => {
                   required
                   value={signUpEmail}
                   onChange={(e) => setSignUpEmail(e.target.value)}
-                  placeholder="ramesh@sreeramsena.org"
+                  placeholder="karthikeyanetha7@gmail.com"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:border-emerald-500 outline-none"
                 />
               </div>
