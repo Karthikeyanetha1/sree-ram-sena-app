@@ -1,9 +1,8 @@
-// Vercel Serverless Function — Meta WhatsApp Cloud API Webhook Verification Endpoint
+// Vercel Serverless Function — Meta WhatsApp Cloud API Webhook Verification Endpoint (ES Module)
 // Path: /api/webhook
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
-    // Safe URL & Query parsing for Vercel Node.js Serverless Runtime
     const host = req.headers ? (req.headers.host || 'sree-ram-sena-app.vercel.app') : 'sree-ram-sena-app.vercel.app';
     const parsedUrl = new URL(req.url || '/api/webhook', `https://${host}`);
     
@@ -38,7 +37,6 @@ module.exports = async (req, res) => {
     return res.status(200).send("OK");
   } catch (err) {
     console.error("Webhook processing error:", err.message);
-    // Always return 200 to prevent serverless function crash
     return res.status(200).send("OK");
   }
-};
+}
