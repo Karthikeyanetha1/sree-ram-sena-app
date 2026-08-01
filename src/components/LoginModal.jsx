@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp, MAX_COLLECTORS_LIMIT } from '../context/AppContext';
-import { ShieldCheck, Lock, User, KeyRound, X, CheckCircle, ArrowRight, UserPlus, AlertCircle, LogOut } from 'lucide-react';
+import { ShieldCheck, Lock, User, KeyRound, X, CheckCircle, ArrowRight, UserPlus, AlertCircle, LogOut, Eye, EyeOff } from 'lucide-react';
 
 export const LoginModal = ({ isOpen, onClose }) => {
   const { setRole, role, registerUser, registeredUsers = [], setCurrentUser, currentUser, signOut } = useApp();
@@ -9,6 +9,7 @@ export const LoginModal = ({ isOpen, onClose }) => {
   // Sign In State (Starts completely empty with no pre-filled demo text)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   // Sign Up State
   const [signUpName, setSignUpName] = useState('');
@@ -47,10 +48,10 @@ export const LoginModal = ({ isOpen, onClose }) => {
       setTimeout(() => {
         setMessage('');
         onClose();
-      }, 1000);
+      }, 800);
     } else {
       // Recognized Admin Accounts or Custom Credentials
-      if (inputEmailClean.includes('admin') || inputEmailClean === 'karthikeyanetha7@gmail.com') {
+      if (inputEmailClean.includes('admin') || inputEmailClean.includes('karthiknetha') || inputEmailClean.includes('karthikeya')) {
         setRole('Super Admin');
         setCurrentUser({ name: 'Gurram Karthikeya (Super Admin)', email: inputEmailClean, role: 'Super Admin' });
       } else if (inputEmailClean.includes('collector')) {
@@ -64,7 +65,7 @@ export const LoginModal = ({ isOpen, onClose }) => {
       setTimeout(() => {
         setMessage('');
         onClose();
-      }, 1000);
+      }, 800);
     }
   };
 
@@ -97,11 +98,12 @@ export const LoginModal = ({ isOpen, onClose }) => {
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+            title="Close modal and continue viewing"
           >
             <X className="w-5 h-5" />
           </button>
           
-          <div className="w-12 h-12 mx-auto rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center mb-2 text-white font-extrabold">
+          <div className="w-12 h-12 mx-auto rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center mb-2 text-white font-extrabold shadow-sm">
             <ShieldCheck className="w-6 h-6 text-emerald-300" />
           </div>
           <h3 className="font-extrabold text-lg tracking-tight">Official Sign In & Member Portal</h3>
@@ -182,7 +184,7 @@ export const LoginModal = ({ isOpen, onClose }) => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email (e.g. karthikeyanetha7@gmail.com)"
+                    placeholder="Enter your email (e.g. karthiknetha@sreeramsena.org)"
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:border-emerald-500 outline-none"
                   />
                 </div>
@@ -193,13 +195,20 @@ export const LoginModal = ({ isOpen, onClose }) => {
                 <div className="relative">
                   <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter password"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:border-emerald-500 outline-none"
+                    className="w-full pl-9 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:border-emerald-500 outline-none"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -227,7 +236,7 @@ export const LoginModal = ({ isOpen, onClose }) => {
                   required
                   value={signUpName}
                   onChange={(e) => setSignUpName(e.target.value)}
-                  placeholder="e.g. Gurram Karthikeya"
+                  placeholder="e.g. Karthik Netha"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:border-emerald-500 outline-none"
                 />
               </div>
@@ -239,7 +248,7 @@ export const LoginModal = ({ isOpen, onClose }) => {
                   required
                   value={signUpEmail}
                   onChange={(e) => setSignUpEmail(e.target.value)}
-                  placeholder="karthikeyanetha7@gmail.com"
+                  placeholder="karthiknetha@sreeramsena.org"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:border-emerald-500 outline-none"
                 />
               </div>

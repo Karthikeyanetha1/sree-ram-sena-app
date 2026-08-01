@@ -36,9 +36,70 @@ export const initialCommitteeInfo = {
 
 export const AppProvider = ({ children }) => {
   const [lang, setLang] = useState('en');
-  const [role, setRole] = useState('Super Admin'); // Super Admin, Collector, Viewer
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  // Persisted Auth Role & Current User State
+  const [role, setRoleState] = useState(() => {
+    return localStorage.getItem('srs_role') || 'Super Admin';
+  });
 
+  const [currentUser, setCurrentUserState] = useState(() => {
+    const saved = localStorage.getItem('srs_current_user');
+    return saved ? JSON.parse(saved) : { name: 'Gurram Karthikeya (Super Admin)', email: 'karthikeyanetha7@gmail.com', role: 'Super Admin' };
+  });
+
+  const setRole = (newRole) => {
+    setRoleState(newRole);
+    localStorage.setItem('srs_role', newRole);
+  };
+
+  const setCurrentUser = (userObj) => {
+    setCurrentUserState(userObj);
+    localStorage.setItem('srs_current_user', JSON.stringify(userObj));
+  };
+
+  const signOut = () => {
+    setRole('Viewer');
+    setCurrentUser({ name: 'Public Visitor', email: '', role: 'Viewer' });
+    localStorage.removeItem('srs_role');
+    localStorage.removeItem('srs_current_user');
+  };
+
+  const [registeredUsers, setRegisteredUsers] = useState(() => {
+    const saved = localStorage.getItem('srs_registered_users');
+    return saved ? JSON.parse(saved) : [
+      { id: '1', name: 'Gurram Karthikeya', email: 'karthikeyanetha7@gmail.com', role: 'Super Admin', status: 'Approved' },
+      { id: '2', name: 'Ramesh Kumar', email: 'ramesh@sreeramsena.org', role: 'Collector', status: 'Approved' }
+    ];
+  });
+
+  const registerUser = (name, email, requestedRole) => {
+    const newUser = {
+      id: String(Date.now()),
+      name,
+      email,
+      role: requestedRole,
+      status: 'Pending Approval',
+      createdAt: new Date().toLocaleDateString('en-IN')
+    };
+    const updated = [newUser, ...registeredUsers];
+    setRegisteredUsers(updated);
+    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+    return newUser;
+  };
+
+  const approveUser = (userId) => {
+    const updated = registeredUsers.map(u => u.id === userId ? { ...u, status: 'Approved' } : u);
+    setRegisteredUsers(updated);
+    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+  };
+
+  const rejectUser = (userId) => {
+    const updated = registeredUsers.filter(u => u.id !== userId);
+    setRegisteredUsers(updated);
+    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+  };
+
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [committeeInfo, setCommitteeInfo] = useState(initialCommitteeInfo);
   
   // LEDGER DATA & LADDU BIDS
@@ -114,95 +175,62 @@ export const AppProvider = ({ children }) => {
   // AUTO RECEIPT NUMBER GENERATOR (SRS-26-000001)
   const getNextReceiptNo = () => {
     const yearPrefix = "SRS-26";
-    
     if (donations.length === 0) {
       return `${yearPrefix}-000001`;
     }
-
     const maxNum = donations.reduce((max, d) => {
-      if (d.receiptNo && d.receiptNo.startsWith(yearPrefix)) {
-        const parts = d.receiptNo.split('-');
-        const num = parseInt(parts[parts.length - 1], 10);
-        return !isNaN(num) && num > max ? num : max;
-      }
-      return max;
+      const parts = d.receiptNo ? d.receiptNo.split('-') : [];
+      const num = parts.length === 3 ? parseInt(parts[2], 10) : 0;
+      return num > max ? num : max;
     }, 0);
-
-    const nextNum = maxNum + 1;
-    return `${yearPrefix}-${String(nextNum).padStart(6, '0')}`;
+    return `${yearPrefix}-${String(maxNum + 1).padStart(6, '0')}`;
   };
 
-  // Convert Number to Words (INR)
-  const numberToWords = (num) => {
-    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
-    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
-    const inWords = (n) => {
-      if (n < 20) return a[n];
-      if (n < 100) return b[Math.floor(n / 10)] + ' ' + a[n % 10];
-      if (n < 1000) return inWords(Math.floor(n / 100)) + 'Hundred ' + (n % 100 !== 0 ? 'and ' + inWords(n % 100) : '');
-      if (n < 100000) return inWords(Math.floor(n / 1000)) + 'Thousand ' + (n % 1000 !== 0 ? inWords(n % 1000) : '');
-      if (n < 10000000) return inWords(Math.floor(n / 100000)) + 'Lakh ' + (n % 100000 !== 0 ? inWords(n % 100000) : '');
-      return inWords(Math.floor(n / 10000000)) + 'Crore ' + (n % 10000000 !== 0 ? inWords(n % 10000000) : '');
-    };
-
-    const val = parseInt(num);
-    if (isNaN(val) || val === 0) return 'Zero Rupees Only';
-    return inWords(val).trim() + ' Rupees Only';
-  };
-
-  // ADD DONATION (WITH OFFLINE STORAGE QUEUE FALLBACK)
-  const addDonation = async (donationData) => {
+  // ADD DONATION
+  const addDonation = (donationData) => {
     const receiptNo = getNextReceiptNo();
     const today = new Date().toISOString().split('T')[0];
 
     const newDonation = {
       receiptNo,
-      donorName: donationData.donorName || 'Generous Donor',
-      mobile: donationData.mobile || '9876543210',
+      donorName: donationData.donorName || 'Devotee',
+      mobile: donationData.mobile || '9999999999',
       village: donationData.village || 'Govindhupalli',
-      address: donationData.address || 'Govindhupalli',
+      address: donationData.address || 'Govindhupalli, Jagtial',
       amount: parseFloat(donationData.amount) || 0,
-      amountInWords: numberToWords(parseFloat(donationData.amount) || 0),
       paymentMethod: donationData.paymentMethod || 'UPI',
-      category: donationData.category || 'General Donation',
-      collector: role === 'Viewer' ? 'Ravi Kumar' : 'Karthik Sharma',
+      collectorName: currentUser?.name || 'Gurram Karthikeya (Super Admin)',
       date: today,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'Verified',
-      notes: donationData.notes || 'Vinayaka Chavithi Seva'
+      verified: true,
+      notes: donationData.notes || 'Vinayaka Chavithi Seva Donation'
     };
 
-    // Update Local State Immediately
     setDonations(prev => [newDonation, ...prev]);
 
-    // Save to Firestore or Offline Queue
+    // Async push to Cloud Firestore
     if (navigator.onLine) {
       try {
-        await addDoc(collection(db, "donations"), {
+        addDoc(collection(db, "donations"), {
           ...newDonation,
           createdAt: serverTimestamp()
+        }).then(res => {
+          newDonation.id = res.id;
+        }).catch(err => {
+          console.warn("Firestore add warning:", err.message);
         });
       } catch (err) {
-        console.warn("Firestore save note:", err.message);
+        console.warn("Firestore collection error:", err.message);
       }
     } else {
-      // Store in Offline Queue
-      const offlineQueue = JSON.parse(localStorage.getItem('sreeramsena_offline_queue') || '[]');
-      offlineQueue.push(newDonation);
-      localStorage.setItem('sreeramsena_offline_queue', JSON.stringify(offlineQueue));
-      setNotifications(prev => [{
-        id: Date.now(),
-        text: `📶 Saved Receipt ${receiptNo} in Offline Mode. Will auto-sync when online.`,
-        time: "Just now",
-        type: "system"
-      }, ...prev]);
+      const savedQueue = JSON.parse(localStorage.getItem('sreeramsena_offline_queue') || '[]');
+      savedQueue.push(newDonation);
+      localStorage.setItem('sreeramsena_offline_queue', JSON.stringify(savedQueue));
     }
 
-    // Add Notification
     setNotifications(prev => [{
       id: Date.now(),
-      text: `New donation ₹${newDonation.amount} recorded for ${newDonation.donorName} (${receiptNo})`,
+      text: `New donation receipt ${receiptNo} created for ₹${newDonation.amount} (${newDonation.donorName})`,
       time: "Just now",
       type: "donation"
     }, ...prev]);
@@ -214,31 +242,22 @@ export const AppProvider = ({ children }) => {
   const addLadduBid = (bidData) => {
     const newBid = {
       id: Date.now(),
-      bidderName: bidData.bidderName || 'Generous Devotee',
-      mobile: bidData.mobile || '9876543210',
-      amount: parseFloat(bidData.amount) || 0,
+      bidderName: bidData.bidderName,
+      mobile: bidData.mobile,
+      amount: parseFloat(bidData.amount),
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       status: 'Leading Bidder 🏆'
     };
 
-    setLadduBids(prev => [
-      newBid,
-      ...prev.map(b => ({ ...b, status: 'Outbid' }))
-    ]);
-
-    setNotifications(prev => [{
-      id: Date.now(),
-      text: `🟡 New Highest Laddu Bid: ₹${newBid.amount.toLocaleString('en-IN')} by ${newBid.bidderName}`,
-      time: "Just now",
-      type: "system"
-    }, ...prev]);
+    setLadduBids(prev => [newBid, ...prev.map(b => ({ ...b, status: 'Outbid' }))]);
+    return newBid;
   };
 
   // DELETE DONATION
   const deleteDonation = async (receiptNo) => {
     const target = donations.find(d => d.receiptNo === receiptNo);
     setDonations(prev => prev.filter(d => d.receiptNo !== receiptNo));
-
+    
     if (target && target.id) {
       try {
         await deleteDoc(doc(db, "donations", target.id));
@@ -280,7 +299,7 @@ export const AppProvider = ({ children }) => {
       amount: parseFloat(expenseData.amount) || 0,
       category: expenseData.category || 'Decorations',
       paymentMethod: expenseData.paymentMethod || 'UPI',
-      approvedBy: 'Karthik Sharma (Super Admin)',
+      approvedBy: currentUser?.name || 'Gurram Karthikeya (Super Admin)',
       date: today,
       status: 'Approved',
       notes: expenseData.notes || 'Festival expense voucher'
@@ -383,6 +402,13 @@ export const AppProvider = ({ children }) => {
       setLang,
       role,
       setRole,
+      currentUser,
+      setCurrentUser,
+      signOut,
+      registeredUsers,
+      registerUser,
+      approveUser,
+      rejectUser,
       isOnline,
       committeeInfo,
       setCommitteeInfo,

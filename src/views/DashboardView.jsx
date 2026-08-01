@@ -217,28 +217,14 @@ export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice
           )}
         </div>
 
-        {role === 'Viewer' ? (
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center space-y-2">
-            <p className="text-xs text-slate-600 font-semibold">
-              You are currently viewing in <strong>Public Visitor Mode</strong>. To issue receipts or record expenses, please log in as a Collector or Super Admin.
-            </p>
-            <button
-              onClick={onOpenLogin}
-              className="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-extrabold shadow-sm transition"
-            >
-              <UserCheck className="w-4 h-4 text-emerald-400" />
-              <span>Sign In as Admin or Collector</span>
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <button
-              onClick={onOpenNewDonation}
-              className="flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl font-bold text-xs shadow-md shadow-emerald-600/20 transition"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>{t.newDonation}</span>
-            </button>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <button
+            onClick={onOpenNewDonation}
+            className="flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl font-bold text-xs shadow-md shadow-emerald-600/20 transition"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>{t.newDonation}</span>
+          </button>
 
             <button
               onClick={onOpenOcr}
@@ -264,7 +250,6 @@ export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice
               <span>{t.addExpense}</span>
             </button>
           </div>
-        )}
       </div>
 
       {/* CHARTS GRID & OUR LOCATION MAPS REAL SCANNABLE QR CODE CARD */}

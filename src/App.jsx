@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -41,14 +41,6 @@ const MainAppContent = () => {
   const [receiptModalDonation, setReceiptModalDonation] = useState(null);
   const [newDonationModalOpen, setNewDonationModalOpen] = useState(false);
   const [newExpenseModalOpen, setNewExpenseModalOpen] = useState(false);
-
-  // AUTO LOGIN PROMPT FOR FIRST-TIME USERS ON SITE VISIT
-  useEffect(() => {
-    const hasSavedUser = localStorage.getItem('srs_user');
-    if (!hasSavedUser) {
-      setLoginOpen(true);
-    }
-  }, []);
 
   const handleOpenReceipt = (donation) => {
     setReceiptModalDonation(donation);
