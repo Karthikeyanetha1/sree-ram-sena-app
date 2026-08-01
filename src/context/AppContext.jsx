@@ -258,6 +258,20 @@ export const AppProvider = ({ children }) => {
         }).catch(err => {
           console.warn("Firestore add warning:", err.message);
         });
+
+        // AUTOMATIC BACKGROUND WHATSAPP RECEIPT DISPATCH (Zero Manual Action Required!)
+        fetch('/api/send-receipt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            receiptNo: newDonation.receiptNo,
+            donorName: newDonation.donorName,
+            amount: newDonation.amount,
+            mobile: newDonation.mobile,
+            paymentMethod: newDonation.paymentMethod
+          })
+        }).catch(err => console.warn("Background API dispatch note:", err.message));
+
       } catch (err) {
         console.warn("Firestore collection error:", err.message);
       }
