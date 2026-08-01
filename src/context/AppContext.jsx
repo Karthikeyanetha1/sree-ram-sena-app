@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from '../firebase/config';
+import { logAction } from '../utils/auditLogger';
 import { 
   collection, 
   onSnapshot, 
@@ -37,7 +38,12 @@ export const initialCommitteeInfo = {
 export const AppProvider = ({ children }) => {
   const [lang, setLang] = useState('en');
   
-  // Persisted Auth Role & Current User State
+  // Persisted Auth State
+  const [isAuthenticated, setIsAuthenticatedState] = useState(() => {
+    const savedAuth = localStorage.getItem('srs_authenticated');
+    return savedAuth !== 'false'; // Defaults to authenticated initial view or saved session
+  });
+
   const [role, setRoleState] = useState(() => {
     return localStorage.getItem('srs_role') || 'Super Admin';
   });
@@ -55,12 +61,17 @@ export const AppProvider = ({ children }) => {
   const setCurrentUser = (userObj) => {
     setCurrentUserState(userObj);
     localStorage.setItem('srs_current_user', JSON.stringify(userObj));
+    setIsAuthenticatedState(true);
+    localStorage.setItem('srs_authenticated', 'true');
+    logAction(userObj.name, userObj.role, 'User Signed In', { email: userObj.email });
   };
 
   const signOut = () => {
+    logAction(currentUser?.name || 'User', role, 'User Signed Out', {});
+    setIsAuthenticatedState(false);
+    localStorage.setItem('srs_authenticated', 'false');
     setRole('Viewer');
-    setCurrentUser({ name: 'Public Visitor', email: '', role: 'Viewer' });
-    localStorage.removeItem('srs_role');
+    setCurrentUserState({ name: 'Public Visitor', email: '', role: 'Viewer' });
     localStorage.removeItem('srs_current_user');
   };
 
@@ -84,6 +95,7 @@ export const AppProvider = ({ children }) => {
     const updated = [newUser, ...registeredUsers];
     setRegisteredUsers(updated);
     localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+    logAction(name, requestedRole, 'User Registration Requested', { email });
     return newUser;
   };
 
@@ -91,12 +103,14 @@ export const AppProvider = ({ children }) => {
     const updated = registeredUsers.map(u => u.id === userId ? { ...u, status: 'Approved' } : u);
     setRegisteredUsers(updated);
     localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+    logAction(currentUser?.name || 'Super Admin', role, 'Approved User Account', { userId });
   };
 
   const rejectUser = (userId) => {
     const updated = registeredUsers.filter(u => u.id !== userId);
     setRegisteredUsers(updated);
     localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+    logAction(currentUser?.name || 'Super Admin', role, 'Rejected User Account', { userId });
   };
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -138,6 +152,7 @@ export const AppProvider = ({ children }) => {
           time: "Just now",
           type: "system"
         }, ...prev]);
+        logAction('System', 'Offline Engine', 'Offline Queue Synced', { count: savedQueue.length });
       }
     };
 
@@ -172,9 +187,9 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
-  // AUTO RECEIPT NUMBER GENERATOR (SRS-26-000001)
+  // AUTO RECEIPT NUMBER GENERATOR (SRS-2026-000001)
   const getNextReceiptNo = () => {
-    const yearPrefix = "SRS-26";
+    const yearPrefix = "SRS-2026";
     if (donations.length === 0) {
       return `${yearPrefix}-000001`;
     }
@@ -228,6 +243,8 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('sreeramsena_offline_queue', JSON.stringify(savedQueue));
     }
 
+    logAction(currentUser?.name || 'Collector', role, 'Created Donation Receipt', { receiptNo, amount: newDonation.amount, donor: newDonation.donorName });
+
     setNotifications(prev => [{
       id: Date.now(),
       text: `New donation receipt ${receiptNo} created for ₹${newDonation.amount} (${newDonation.donorName})`,
@@ -250,6 +267,7 @@ export const AppProvider = ({ children }) => {
     };
 
     setLadduBids(prev => [newBid, ...prev.map(b => ({ ...b, status: 'Outbid' }))]);
+    logAction(currentUser?.name || 'User', role, 'Recorded Laddu Bid', { bidder: bidData.bidderName, amount: bidData.amount });
     return newBid;
   };
 
@@ -265,6 +283,8 @@ export const AppProvider = ({ children }) => {
         console.warn("Firestore delete note:", err.message);
       }
     }
+
+    logAction(currentUser?.name || 'Super Admin', role, 'Deleted Donation Receipt', { receiptNo });
 
     setNotifications(prev => [{
       id: Date.now(),
@@ -286,6 +306,8 @@ export const AppProvider = ({ children }) => {
         console.warn("Firestore update note:", err.message);
       }
     }
+
+    logAction(currentUser?.name || 'Admin', role, 'Updated Donation Receipt', { receiptNo });
   };
 
   // ADD EXPENSE
@@ -306,6 +328,8 @@ export const AppProvider = ({ children }) => {
     };
 
     setExpenses(prev => [newExpense, ...prev]);
+
+    logAction(currentUser?.name || 'Admin', role, 'Recorded Expense Voucher', { voucherNo: newExpense.voucherNo, amount: newExpense.amount });
 
     setNotifications(prev => [{
       id: Date.now(),
@@ -331,6 +355,8 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
       console.warn("Cloud reset note:", err.message);
     }
+
+    logAction(currentUser?.name || 'Super Admin', role, 'Fresh System & Cloud Reset', {});
 
     setNotifications([
       { id: Date.now(), text: "Database fresh reset completed. Ready for 44-day Vinayaka Chaturthi Seva!", time: "Just now", type: "system" }
@@ -402,6 +428,8 @@ export const AppProvider = ({ children }) => {
       setLang,
       role,
       setRole,
+      isAuthenticated,
+      setIsAuthenticatedState,
       currentUser,
       setCurrentUser,
       signOut,

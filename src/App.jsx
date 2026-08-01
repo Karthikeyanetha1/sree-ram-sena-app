@@ -11,7 +11,10 @@ import { LoginModal } from './components/LoginModal';
 import { WhatsAppAutomationModal } from './components/WhatsAppAutomationModal';
 import { BroadcastModal } from './components/BroadcastModal';
 import { AuditLogModal } from './components/AuditLogModal';
+import { SessionTimeoutModal } from './components/SessionTimeoutModal';
+import { FirstLoginWizardModal } from './components/FirstLoginWizardModal';
 
+import { LoginPage } from './views/LoginPage';
 import { DashboardView } from './views/DashboardView';
 import { DonationsView } from './views/DonationsView';
 import { ExpensesView } from './views/ExpensesView';
@@ -24,7 +27,7 @@ import { LadduAuctionView } from './views/LadduAuctionView';
 import { LeaderboardView } from './views/LeaderboardView';
 
 const MainAppContent = () => {
-  const { addDonation, addExpense, role } = useApp();
+  const { addDonation, addExpense, role, isAuthenticated, setIsAuthenticatedState } = useApp();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -40,9 +43,19 @@ const MainAppContent = () => {
   const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [auditLogOpen, setAuditLogOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [receiptModalDonation, setReceiptModalDonation] = useState(null);
   const [newDonationModalOpen, setNewDonationModalOpen] = useState(false);
   const [newExpenseModalOpen, setNewExpenseModalOpen] = useState(false);
+
+  // If user is unauthenticated or explicitly signed out, render LoginPage Portal landing view!
+  if (!isAuthenticated) {
+    return (
+      <LoginPage 
+        onLoginSuccess={() => setIsAuthenticatedState(true)}
+      />
+    );
+  }
 
   const handleOpenReceipt = (donation) => {
     setReceiptModalDonation(donation);
@@ -119,6 +132,7 @@ const MainAppContent = () => {
               onViewReceipt={handleOpenReceipt}
               onOpenOcr={() => { setOcrMode('donation'); setOcrOpen(true); }}
               onOpenLogin={() => setLoginOpen(true)}
+              onOpenWizard={() => setWizardOpen(true)}
             />
           )}
 
@@ -167,6 +181,13 @@ const MainAppContent = () => {
       </div>
 
       {/* Global Modals */}
+      <SessionTimeoutModal />
+
+      <FirstLoginWizardModal
+        isOpen={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+      />
+
       <LoginModal
         isOpen={loginOpen}
         onClose={() => setLoginOpen(false)}

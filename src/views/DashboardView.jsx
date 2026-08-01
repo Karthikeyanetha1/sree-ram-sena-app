@@ -31,8 +31,8 @@ import {
   Cell 
 } from 'recharts';
 
-export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice, onViewReceipt, onOpenOcr, onOpenLogin }) => {
-  const { t, donations, expenses, committeeInfo, role } = useApp();
+export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice, onViewReceipt, onOpenOcr, onOpenLogin, onOpenWizard }) => {
+  const { t, donations, expenses, committeeInfo, role, currentUser } = useApp();
 
   const totalDonationsAmount = donations.reduce((acc, d) => acc + (parseFloat(d.amount) || 0), 0);
   const totalExpensesAmount = expenses.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
@@ -62,7 +62,7 @@ export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice
   return (
     <div className="space-y-6 pb-12">
       
-      {/* Top Banner / Time Greeting */}
+      {/* Top Banner / Personalized Greeting */}
       <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
         
@@ -71,12 +71,25 @@ export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice
             <div className="flex items-center space-x-2 text-emerald-200 text-xs font-bold uppercase tracking-wider mb-1">
               <span className="text-base">✨</span>
               <span>SREE RAM SENA Divine Manager</span>
+              <span className="bg-amber-400 text-emerald-950 text-[10px] font-black px-2 py-0.5 rounded-full ml-1">
+                {role === 'Super Admin' ? '👑 Super Admin' : role === 'Collector' ? '🤝 Collector' : '👁️ Visitor'}
+              </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-              Vinayaka Chaturthi 2026 Dashboard
+
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2">
+              Welcome back, {currentUser?.name || 'Gurram Karthikeya'}!
             </h1>
-            <p className="text-xs sm:text-sm text-emerald-100/90 mt-1 max-w-xl">
-              Real-time Vinayaka Chaturthi festival donations, expenses, AI OCR slip scanning & receipt ledger for Govindhupalli.
+
+            <p className="text-xs sm:text-sm text-emerald-100/90 mt-1 max-w-xl flex items-center gap-2 font-medium">
+              <span>Last login: Today, 8:15 AM • Mobile / Chrome on Linux</span>
+              {role === 'Super Admin' && onOpenWizard && (
+                <button
+                  onClick={onOpenWizard}
+                  className="bg-white/20 hover:bg-white/30 text-white text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg border border-white/30 transition shadow-xs"
+                >
+                  ⚙️ Setup Wizard
+                </button>
+              )}
             </p>
           </div>
 
