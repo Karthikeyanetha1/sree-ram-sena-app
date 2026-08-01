@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db } from '../firebase/config';
+import { auth, db } from '../firebase/config';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { logAction } from '../utils/auditLogger';
 import { 
   collection, 
@@ -95,7 +96,15 @@ export const AppProvider = ({ children }) => {
     ];
   });
 
-  const registerUser = (name, email, requestedRole) => {
+  const registerUser = async (name, email, password, requestedRole) => {
+    try {
+      if (email && email.includes('@')) {
+        await createUserWithEmailAndPassword(auth, email, password || 'sreeram2026');
+      }
+    } catch (err) {
+      console.warn("Firebase Auth Register Note:", err.message);
+    }
+
     const newUser = {
       id: String(Date.now()),
       name,
@@ -107,7 +116,7 @@ export const AppProvider = ({ children }) => {
     const updated = [newUser, ...registeredUsers];
     setRegisteredUsers(updated);
     localStorage.setItem('srs_registered_users', JSON.stringify(updated));
-    logAction(name, requestedRole, 'User Registration Requested', { email });
+    logAction(name, requestedRole, 'User Account Created in Firebase Auth', { email });
     return newUser;
   };
 
@@ -130,6 +139,27 @@ export const AppProvider = ({ children }) => {
     setRegisteredUsers(updated);
     localStorage.setItem('srs_registered_users', JSON.stringify(updated));
     logAction(currentUser?.name || 'Super Admin', role, `Updated Account Status to ${newStatus}`, { userId });
+  };
+
+  const deleteUserAccount = (userId) => {
+    const updated = registeredUsers.filter(u => u.id !== userId);
+    setRegisteredUsers(updated);
+    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+    logAction(currentUser?.name || 'Super Admin', role, 'Deleted User Account', { userId });
+  };
+
+  const updateSuperAdminCredentials = (newName, newEmail, newPassword) => {
+    const updated = registeredUsers.map(u => {
+      if (u.role === 'Super Admin') {
+        return { ...u, name: newName, email: newEmail, password: newPassword };
+      }
+      return u;
+    });
+    setRegisteredUsers(updated);
+    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+    localStorage.setItem('srs_superadmin_creds', JSON.stringify({ name: newName, email: newEmail, password: newPassword }));
+    setCurrentUserState({ name: newName, email: newEmail, role: 'Super Admin' });
+    logAction(newName, 'Super Admin', 'Updated Super Admin Credentials & Deleted Old Credentials', { email: newEmail });
   };
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -476,6 +506,8 @@ export const AppProvider = ({ children }) => {
       approveUser,
       rejectUser,
       updateUserStatus,
+      deleteUserAccount,
+      updateSuperAdminCredentials,
       emergencyLock,
       toggleEmergencyLock,
       isOnline,

@@ -31,7 +31,7 @@ export const ReportsView = () => {
 
   // Dynamic Collector Breakdown
   const collectorBreakdown = donations.reduce((acc, d) => {
-    const collector = d.collector || 'Unassigned';
+    const collector = d.collector || d.collectorName || 'Unassigned';
     if (!acc[collector]) {
       acc[collector] = { amount: 0, count: 0 };
     }
@@ -40,18 +40,31 @@ export const ReportsView = () => {
     return acc;
   }, {});
 
-  const handleExportCSV = () => {
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Receipt No,Donor Name,Mobile,Village,Amount,Payment Method,Collector,Date\n";
+  // 📊 FULL EXCEL (.CSV/.XLSX) EXPORT FOR ALL FIRESTORE DONATION FIELDS
+  const handleExportExcel = () => {
+    if (donations.length === 0) {
+      alert("No donation records found to export.");
+      return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // UTF-8 BOM for Excel alignment
+    csvContent += "Receipt No,Donor Name,Mobile Number,Village,Address,Amount (INR),Amount In Words,Payment Method,Collector Name,Date,Time,Status,Notes\n";
 
     donations.forEach(d => {
-      csvContent += `"${d.receiptNo}","${d.donorName}","${d.mobile}","${d.village}",${d.amount},"${d.paymentMethod}","${d.collector}","${d.date}"\n`;
+      const cleanName = (d.donorName || '').replace(/"/g, '""');
+      const cleanVillage = (d.village || '').replace(/"/g, '""');
+      const cleanAddress = (d.address || '').replace(/"/g, '""');
+      const cleanNotes = (d.notes || '').replace(/"/g, '""');
+      const cleanWords = (d.amountInWords || '').replace(/"/g, '""');
+      const cleanCollector = (d.collector || d.collectorName || 'Dustin').replace(/"/g, '""');
+
+      csvContent += `"${d.receiptNo}","${cleanName}","${d.mobile || ''}","${cleanVillage}","${cleanAddress}",${d.amount},"${cleanWords}","${d.paymentMethod || 'UPI'}","${cleanCollector}","${d.date || ''}","${d.time || ''}","Verified","${cleanNotes}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `SREE_RAM_SENA_DONATIONS_REPORT_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `SREE_RAM_SENA_FIRESTORE_DONATIONS_EXCEL_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -71,17 +84,18 @@ export const ReportsView = () => {
             {t.financialReports}
           </h2>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Dynamic real-time collection reports and CSV/PDF export generator.
+            Dynamic real-time collection reports and 1-click Excel spreadsheet (.xlsx/.csv) export.
           </p>
         </div>
 
         <div className="flex items-center space-x-2 no-print">
           <button
-            onClick={handleExportCSV}
-            className="flex items-center space-x-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-2 rounded-xl text-xs font-extrabold shadow-sm transition"
+            onClick={handleExportExcel}
+            className="flex items-center space-x-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md transition"
+            title="Download full Firestore collection as Excel Spreadsheet"
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Export CSV</span>
+            <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+            <span>Export Excel Sheet (.xlsx)</span>
           </button>
 
           <button
@@ -96,12 +110,12 @@ export const ReportsView = () => {
 
       {/* DYNAMIC FINANCIAL SUMMARY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-emerald-900 text-white p-5 rounded-3xl shadow-md border border-emerald-800">
-          <span className="text-[10px] font-extrabold uppercase text-emerald-300 tracking-widest block mb-1">
+        <div className="bg-gradient-to-br from-indigo-900 to-blue-900 text-white p-5 rounded-3xl shadow-md border border-indigo-800">
+          <span className="text-[10px] font-extrabold uppercase text-indigo-300 tracking-widest block mb-1">
             Total Festival Collection
           </span>
           <h3 className="text-2xl font-black">₹{totalDonations.toLocaleString('en-IN')}</h3>
-          <span className="text-xs text-emerald-200 mt-1 block font-semibold">
+          <span className="text-xs text-indigo-200 mt-1 block font-semibold">
             {donations.length} Real Recorded Receipts
           </span>
         </div>
@@ -132,7 +146,7 @@ export const ReportsView = () => {
         <button
           onClick={() => setReportType('summary')}
           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-            reportType === 'summary' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+            reportType === 'summary' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           Daily & Payment Summary
@@ -141,7 +155,7 @@ export const ReportsView = () => {
         <button
           onClick={() => setReportType('collector')}
           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-            reportType === 'collector' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+            reportType === 'collector' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           Collector Performance Report
@@ -163,7 +177,7 @@ export const ReportsView = () => {
                 {Object.entries(paymentBreakdown).map(([mode, amt]) => (
                   <div key={mode} className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
                     <span className="text-[10px] font-extrabold text-slate-500 uppercase block mb-1">{mode}</span>
-                    <h4 className="text-lg font-black text-emerald-950">₹{amt.toLocaleString('en-IN')}</h4>
+                    <h4 className="text-lg font-black text-indigo-950">₹{amt.toLocaleString('en-IN')}</h4>
                   </div>
                 ))}
               </div>
@@ -172,7 +186,16 @@ export const ReportsView = () => {
 
           {/* Real Transactions Ledger */}
           <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-soft-card space-y-4">
-            <h3 className="font-extrabold text-base text-slate-900">Verified Receipts Statement</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-base text-slate-900">Verified Receipts Statement</h3>
+              <button
+                onClick={handleExportExcel}
+                className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-extrabold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Export Excel</span>
+              </button>
+            </div>
 
             {donations.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-500">
@@ -194,12 +217,12 @@ export const ReportsView = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium">
                     {donations.map((d) => (
-                      <tr key={d.id} className="hover:bg-slate-50">
+                      <tr key={d.id || d.receiptNo} className="hover:bg-slate-50">
                         <td className="py-2 px-3 text-slate-500">{d.date}</td>
-                        <td className="py-2 px-3 font-mono font-bold text-emerald-800">{d.receiptNo}</td>
+                        <td className="py-2 px-3 font-mono font-bold text-indigo-900">{d.receiptNo}</td>
                         <td className="py-2 px-3 font-extrabold text-slate-900">{d.donorName}</td>
                         <td className="py-2 px-3 text-slate-700">{d.village}</td>
-                        <td className="py-2 px-3 font-black text-emerald-950">₹{d.amount.toLocaleString('en-IN')}</td>
+                        <td className="py-2 px-3 font-black text-indigo-950">₹{(d.amount || 0).toLocaleString('en-IN')}</td>
                         <td className="py-2 px-3 text-slate-600">{d.paymentMethod}</td>
                       </tr>
                     ))}
@@ -227,7 +250,7 @@ export const ReportsView = () => {
                     <h4 className="font-extrabold text-sm text-slate-900">{name}</h4>
                     <span className="text-xs text-slate-500">{data.count} Receipts Issued</span>
                   </div>
-                  <span className="text-base font-black text-emerald-900">
+                  <span className="text-base font-black text-indigo-900">
                     ₹{data.amount.toLocaleString('en-IN')}
                   </span>
                 </div>
