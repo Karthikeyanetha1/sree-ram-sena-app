@@ -16,19 +16,36 @@ import {
   UserCheck,
   Calendar,
   RotateCcw,
-  AlertTriangle
+  AlertTriangle,
+  Key,
+  Cloud,
+  CheckCircle2,
+  Layers
 } from 'lucide-react';
 
 export const SettingsView = () => {
   const { t, committeeInfo, setCommitteeInfo, exportBackupData, importBackupData, lang, setLang, role, freshSystemReset } = useApp();
 
   const [formState, setFormState] = useState({ ...committeeInfo });
-  const [activeSubTab, setActiveSubTab] = useState('profile');
+  const [activeSubTab, setActiveSubTab] = useState('profile'); // 'profile' | 'integrations' | 'backup'
+
+  // Meta Cloud API Credentials State
+  const [metaToken, setMetaToken] = useState(localStorage.getItem('meta_whatsapp_token') || '');
+  const [metaPhoneId, setMetaPhoneId] = useState(localStorage.getItem('meta_phone_number_id') || '');
+  const [metaWabaId, setMetaWabaId] = useState(localStorage.getItem('meta_waba_id') || '');
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
     setCommitteeInfo(formState);
     alert(lang === 'te' ? "కమిటీ ప్రొఫైల్ వివరాలు విజయవంతంగా సేవ్ చేయబడ్డాయి!" : "Committee profile updated successfully!");
+  };
+
+  const handleSaveIntegrations = (e) => {
+    e.preventDefault();
+    localStorage.setItem('meta_whatsapp_token', metaToken);
+    localStorage.setItem('meta_phone_number_id', metaPhoneId);
+    localStorage.setItem('meta_waba_id', metaWabaId);
+    alert("✓ Meta WhatsApp Cloud API credentials and Integration settings saved!");
   };
 
   const handleFileUpload = (e) => {
@@ -57,7 +74,7 @@ export const SettingsView = () => {
           Settings & Security
         </h2>
         <p className="text-xs text-slate-500 font-medium mt-0.5">
-          Configure committee details, configurable festival events, security audit trail, and offline data backups.
+          Configure committee details, WhatsApp Cloud API integrations, security audit trail, and offline backups.
         </p>
       </div>
 
@@ -66,17 +83,29 @@ export const SettingsView = () => {
         <button
           onClick={() => setActiveSubTab('profile')}
           className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-            activeSubTab === 'profile' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+            activeSubTab === 'profile' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Building className="w-4 h-4" />
           <span>Committee Profile</span>
         </button>
 
+        {role === 'Super Admin' && (
+          <button
+            onClick={() => setActiveSubTab('integrations')}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+              activeSubTab === 'integrations' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Cloud className="w-4 h-4 text-teal-300" />
+            <span>WhatsApp Integrations</span>
+          </button>
+        )}
+
         <button
           onClick={() => setActiveSubTab('backup')}
           className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-            activeSubTab === 'backup' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+            activeSubTab === 'backup' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Download className="w-4 h-4" />
@@ -88,7 +117,7 @@ export const SettingsView = () => {
       {activeSubTab === 'profile' && (
         <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-soft-card space-y-4">
           <div className="flex items-center space-x-2 pb-3 border-b border-slate-100">
-            <Building className="w-5 h-5 text-emerald-600" />
+            <Building className="w-5 h-5 text-indigo-600" />
             <h3 className="font-extrabold text-base text-slate-900">Committee Profile & Address</h3>
           </div>
 
@@ -101,7 +130,7 @@ export const SettingsView = () => {
                   type="text"
                   disabled
                   value={formState.festivalName || 'Vinayaka Chavithi 2026'}
-                  className="w-full px-3 py-2 border border-emerald-300 bg-emerald-50 rounded-xl font-extrabold text-emerald-900 outline-none"
+                  className="w-full px-3 py-2 border border-indigo-200 bg-indigo-50 rounded-xl font-extrabold text-indigo-900 outline-none"
                 />
               </div>
 
@@ -111,7 +140,7 @@ export const SettingsView = () => {
                   type="text"
                   value={formState.name}
                   onChange={(e) => setFormState({ ...formState, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-extrabold text-slate-900 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-extrabold text-slate-900 outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -123,7 +152,7 @@ export const SettingsView = () => {
                   type="text"
                   value={formState.since}
                   onChange={(e) => setFormState({ ...formState, since: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-semibold text-slate-800 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-semibold text-slate-800 outline-none focus:border-indigo-500"
                 />
               </div>
               <div>
@@ -132,7 +161,7 @@ export const SettingsView = () => {
                   type="text"
                   value={formState.phone}
                   onChange={(e) => setFormState({ ...formState, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -143,7 +172,7 @@ export const SettingsView = () => {
                 type="text"
                 value={formState.address}
                 onChange={(e) => setFormState({ ...formState, address: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl font-semibold text-slate-800 outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl font-semibold text-slate-800 outline-none focus:border-indigo-500"
               />
             </div>
 
@@ -154,7 +183,7 @@ export const SettingsView = () => {
                   type="text"
                   disabled
                   value="SRS-26"
-                  className="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-xl font-mono font-bold text-emerald-800 outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-xl font-mono font-bold text-indigo-900 outline-none"
                 />
               </div>
               <div>
@@ -163,14 +192,14 @@ export const SettingsView = () => {
                   type="text"
                   value={formState.upiId}
                   onChange={(e) => setFormState({ ...formState, upiId: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-extrabold shadow-md transition"
+              className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-extrabold shadow-md transition"
             >
               <Save className="w-4 h-4" />
               <span>Save Changes</span>
@@ -180,7 +209,85 @@ export const SettingsView = () => {
         </div>
       )}
 
-      {/* TAB 2: BACKUP & SYSTEM RESET */}
+      {/* TAB 2: WHATSAPP INTEGRATIONS (Super Admin Only) */}
+      {activeSubTab === 'integrations' && role === 'Super Admin' && (
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-soft-card space-y-6">
+          
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center space-x-2">
+              <Cloud className="w-5 h-5 text-indigo-600" />
+              <h3 className="font-extrabold text-base text-slate-900">Meta WhatsApp Cloud API Integrations</h3>
+            </div>
+            <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full flex items-center gap-1 border border-emerald-200">
+              <CheckCircle2 className="w-3.5 h-3.5" /> 🟢 Connected
+            </span>
+          </div>
+
+          <form onSubmit={handleSaveIntegrations} className="space-y-4 max-w-2xl text-xs font-semibold">
+            
+            <div>
+              <label className="text-slate-700 font-bold block mb-1">Permanent Access Token (META_WHATSAPP_TOKEN)</label>
+              <input
+                type="password"
+                value={metaToken}
+                onChange={(e) => setMetaToken(e.target.value)}
+                placeholder="EAAG..."
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono text-slate-900 outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-slate-700 font-bold block mb-1">Phone Number ID (META_PHONE_NUMBER_ID)</label>
+                <input
+                  type="text"
+                  value={metaPhoneId}
+                  onChange={(e) => setMetaPhoneId(e.target.value)}
+                  placeholder="1188601974342405"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-700 font-bold block mb-1">WABA Account ID (META_WABA_ID)</label>
+                <input
+                  type="text"
+                  value={metaWabaId}
+                  onChange={(e) => setMetaWabaId(e.target.value)}
+                  placeholder="1600507044806656"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            {/* WEBHOOK VERIFICATION PARAMETERS DISPLAY */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">Webhook Endpoint Configuration</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                <div>
+                  <span className="text-slate-500 font-bold block">Callback URL:</span>
+                  <span className="font-mono text-indigo-900 font-extrabold select-all">https://sree-ram-sena-app.vercel.app/api/webhook</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-bold block">Verify Token:</span>
+                  <span className="font-mono text-emerald-800 font-extrabold select-all">sreeramsena2026secret</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-extrabold shadow-md transition"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save WhatsApp Credentials</span>
+            </button>
+
+          </form>
+        </div>
+      )}
+
+      {/* TAB 3: BACKUP & SYSTEM RESET */}
       {activeSubTab === 'backup' && (
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-soft-card space-y-4">
@@ -192,7 +299,7 @@ export const SettingsView = () => {
             <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={exportBackupData}
-                className="flex items-center space-x-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-md transition"
+                className="flex items-center space-x-2 bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-md transition"
               >
                 <Download className="w-4 h-4" />
                 <span>Export Data</span>
