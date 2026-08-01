@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useApp, MAX_COLLECTORS_LIMIT } from '../context/AppContext';
 import { 
   Layers, 
   Eye, 

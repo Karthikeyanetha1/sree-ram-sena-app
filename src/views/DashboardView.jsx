@@ -63,7 +63,7 @@ export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice
     <div className="space-y-6 pb-12">
       
       {/* Top Banner / Personalized Greeting */}
-      <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-indigo-900 via-blue-900 to-indigo-800 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
         
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

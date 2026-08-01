@@ -8,16 +8,25 @@ import {
   Eye, 
   Cloud, 
   Zap, 
-  CheckCircle2, 
   Loader2, 
-  Smartphone,
-  MessageCircle
+  Settings,
+  CheckCircle2,
+  Key,
+  Phone,
+  Building
 } from 'lucide-react';
 
 export const BroadcastModal = ({ isOpen, onClose }) => {
   const { donations, committeeInfo } = useApp();
   
-  const [dispatchMode, setDispatchMode] = useState('direct'); // 'cloud' | 'direct'
+  const [dispatchMode, setDispatchMode] = useState('direct'); // 'direct' | 'cloud'
+  const [showCloudConfig, setShowCloudConfig] = useState(false);
+
+  // Meta Cloud API Credentials State
+  const [metaToken, setMetaToken] = useState(localStorage.getItem('meta_whatsapp_token') || '');
+  const [metaPhoneId, setMetaPhoneId] = useState(localStorage.getItem('meta_phone_number_id') || '');
+  const [metaWabaId, setMetaWabaId] = useState(localStorage.getItem('meta_waba_id') || '');
+
   const [selectedTemplate, setSelectedTemplate] = useState('gratitude');
   const [customMessage, setCustomMessage] = useState('');
   const [sentCount, setSentCount] = useState(0);
@@ -66,18 +75,29 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
     .replace(/\[DONOR_NAME\]/g, sampleDonor.donorName || 'Devotee')
     .replace(/\[AMOUNT\]/g, (sampleDonor.amount || 0).toLocaleString('en-IN'));
 
+  const handleSaveMetaCredentials = (e) => {
+    e.preventDefault();
+    localStorage.setItem('meta_whatsapp_token', metaToken);
+    localStorage.setItem('meta_phone_number_id', metaPhoneId);
+    localStorage.setItem('meta_waba_id', metaWabaId);
+    setShowCloudConfig(false);
+    alert("✓ Meta WhatsApp Cloud API credentials saved successfully!");
+  };
+
   // Single Donor Dispatch
   const handleLaunchSingleBroadcast = async (donation) => {
     let finalMessage = currentTemplateText
       .replace(/\[DONOR_NAME\]/g, donation.donorName || 'Devotee')
       .replace(/\[AMOUNT\]/g, (donation.amount || 0).toLocaleString('en-IN'));
 
-    if (dispatchMode === 'cloud') {
+    if (dispatchMode === 'cloud' && metaToken && metaPhoneId) {
       try {
         const response = await fetch('/api/broadcast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            token: metaToken,
+            phoneId: metaPhoneId,
             mobile: donation.mobile,
             donorName: donation.donorName,
             amount: donation.amount,
@@ -126,7 +146,6 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
       window.open(`https://wa.me/${phone}?text=${encoded}`, '_blank');
       setSentCount(count);
       
-      // 500ms delay between dispatches
       await new Promise(res => setTimeout(res, 500));
     }
 
@@ -138,15 +157,15 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-in fade-in">
       <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-4">
         
-        {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-700 p-5 text-white flex items-center justify-between">
+        {/* Header - Royal Blue & Teal Gradient */}
+        <div className="bg-gradient-to-r from-indigo-900 via-blue-800 to-teal-700 p-5 text-white flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center font-extrabold text-lg">
-              <MessageCircle className="w-6 h-6 text-amber-300" />
+              <Sparkles className="w-6 h-6 text-amber-300" />
             </div>
             <div>
               <h3 className="font-extrabold text-base sm:text-lg">WhatsApp Private Festival Broadcast</h3>
-              <p className="text-xs text-emerald-100/90">1-on-1 Private Messages to All Ledger Donors ({donations.length} Donors)</p>
+              <p className="text-xs text-indigo-100">1-on-1 Private Messages to All Ledger Donors ({donations.length} Donors)</p>
             </div>
           </div>
 
@@ -157,11 +176,22 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
 
         <div className="p-5 sm:p-6 space-y-5 text-xs font-semibold text-slate-800">
           
-          {/* Dual Mode Switcher (Meta Cloud API vs 1-Click wa.me Direct) */}
+          {/* Dispatch Mode Selector & Config Button */}
           <div className="space-y-1.5">
-            <label className="text-slate-500 font-extrabold block uppercase tracking-wider text-[10px]">
-              Select Dispatch Engine Mode:
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-slate-500 font-extrabold block uppercase tracking-wider text-[10px]">
+                Select Dispatch Engine Mode:
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setShowCloudConfig(!showCloudConfig)}
+                className="text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>{showCloudConfig ? 'Hide Cloud Config' : '⚙️ Cloud API Credentials'}</span>
+              </button>
+            </div>
 
             <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl border border-slate-200">
               <button
@@ -169,7 +199,7 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
                 onClick={() => setDispatchMode('direct')}
                 className={`py-2.5 px-3 rounded-xl font-extrabold text-xs transition flex items-center justify-center space-x-1.5 ${
                   dispatchMode === 'direct'
-                    ? 'bg-emerald-600 text-white shadow-md'
+                    ? 'bg-indigo-600 text-white shadow-md'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -182,7 +212,7 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
                 onClick={() => setDispatchMode('cloud')}
                 className={`py-2.5 px-3 rounded-xl font-extrabold text-xs transition flex items-center justify-center space-x-1.5 ${
                   dispatchMode === 'cloud'
-                    ? 'bg-emerald-600 text-white shadow-md'
+                    ? 'bg-indigo-600 text-white shadow-md'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -191,6 +221,64 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
               </button>
             </div>
           </div>
+
+          {/* META CLOUD API CREDENTIALS CONFIG DRAWER */}
+          {showCloudConfig && (
+            <form onSubmit={handleSaveMetaCredentials} className="p-4 bg-indigo-50/80 rounded-2xl border border-indigo-200 space-y-3 animate-in fade-in">
+              <div className="flex items-center space-x-2 text-indigo-950 font-black text-xs">
+                <Key className="w-4 h-4 text-indigo-600" />
+                <span>Meta WhatsApp Cloud API Credentials Setup</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1">Permanent Access Token</label>
+                  <input
+                    type="password"
+                    placeholder="META_WHATSAPP_TOKEN"
+                    value={metaToken}
+                    onChange={(e) => setMetaToken(e.target.value)}
+                    className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1">Phone Number ID</label>
+                  <input
+                    type="text"
+                    placeholder="META_PHONE_NUMBER_ID"
+                    value={metaPhoneId}
+                    onChange={(e) => setMetaPhoneId(e.target.value)}
+                    className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1">WABA Account ID</label>
+                  <input
+                    type="text"
+                    placeholder="META_WABA_ID"
+                    value={metaWabaId}
+                    onChange={(e) => setMetaWabaId(e.target.value)}
+                    className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[10px] text-indigo-800 font-bold">
+                  ✓ Credentials enable direct background API broadcasts. If blank, system uses 1-Click wa.me fallback!
+                </span>
+
+                <button
+                  type="submit"
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs"
+                >
+                  Save Credentials
+                </button>
+              </div>
+            </form>
+          )}
 
           {/* Template Selector */}
           <div>
@@ -203,7 +291,7 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
                 onClick={() => { setSelectedTemplate('gratitude'); setCustomMessage(''); }}
                 className={`p-3 rounded-2xl border text-left transition ${
                   selectedTemplate === 'gratitude' && !customMessage
-                    ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-black shadow-xs'
+                    ? 'border-indigo-600 bg-indigo-50 text-indigo-950 font-black shadow-xs'
                     : 'border-slate-200 bg-slate-50 text-slate-700'
                 }`}
               >
@@ -215,7 +303,7 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
                 onClick={() => { setSelectedTemplate('annadhanam'); setCustomMessage(''); }}
                 className={`p-3 rounded-2xl border text-left transition ${
                   selectedTemplate === 'annadhanam' && !customMessage
-                    ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-black shadow-xs'
+                    ? 'border-indigo-600 bg-indigo-50 text-indigo-950 font-black shadow-xs'
                     : 'border-slate-200 bg-slate-50 text-slate-700'
                 }`}
               >
@@ -227,7 +315,7 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
                 onClick={() => { setSelectedTemplate('nimajjanam'); setCustomMessage(''); }}
                 className={`p-3 rounded-2xl border text-left transition ${
                   selectedTemplate === 'nimajjanam' && !customMessage
-                    ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-black shadow-xs'
+                    ? 'border-indigo-600 bg-indigo-50 text-indigo-950 font-black shadow-xs'
                     : 'border-slate-200 bg-slate-50 text-slate-700'
                 }`}
               >
@@ -236,7 +324,7 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Editable Message Box */}
+          {/* CLEAN SINGLE BROADCAST MESSAGE BOX */}
           <div>
             <label className="text-slate-500 font-extrabold block mb-1 uppercase tracking-wider text-[10px]">
               Message Text (Supports [DONOR_NAME] and [AMOUNT] tags):
@@ -245,7 +333,7 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
               rows={4}
               value={currentTemplateText}
               onChange={(e) => setCustomMessage(e.target.value)}
-              className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-emerald-500 text-xs leading-relaxed"
+              className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-indigo-500 text-xs leading-relaxed"
             />
           </div>
 
@@ -255,7 +343,7 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
               <span className="flex items-center gap-1">
                 <Eye className="w-3.5 h-3.5 text-amber-700" /> Live Automatic Preview for: <strong>{sampleDonor.donorName}</strong>
               </span>
-              <span className="text-emerald-800 font-extrabold">Amount: ₹{sampleDonor.amount}</span>
+              <span className="text-indigo-900 font-extrabold">Amount: ₹{sampleDonor.amount}</span>
             </div>
             <p className="text-slate-800 text-xs italic font-medium whitespace-pre-line leading-relaxed bg-white p-3 rounded-xl border border-amber-200">
               {samplePreviewText}
@@ -266,14 +354,14 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* 1-CLICK MASS BROADCAST BUTTON */}
-          <div className="p-4 bg-gradient-to-r from-emerald-900 to-emerald-950 rounded-2xl text-white space-y-3 shadow-lg">
+          <div className="p-4 bg-gradient-to-r from-indigo-900 to-blue-950 rounded-2xl text-white space-y-3 shadow-lg">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h4 className="font-extrabold text-sm text-white flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-amber-300" />
                   <span>1-Click Mass Broadcast Engine</span>
                 </h4>
-                <p className="text-[11px] text-emerald-200">
+                <p className="text-[11px] text-indigo-200">
                   Send personalized private messages to all {donations.length} donors in 1 click!
                 </p>
               </div>
@@ -311,7 +399,7 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
               <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
                 Donor Dispatch Ledger ({donations.length} Donors)
               </span>
-              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              <span className="text-[10px] font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
                 Dispatched: {sentCount} / {donations.length}
               </span>
             </div>
@@ -329,7 +417,7 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
 
                     <button
                       onClick={() => handleLaunchSingleBroadcast(d)}
-                      className="flex items-center space-x-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-xs transition"
+                      className="flex items-center space-x-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-xs transition"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>Send Private WhatsApp</span>

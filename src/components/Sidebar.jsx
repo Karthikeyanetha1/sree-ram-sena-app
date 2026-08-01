@@ -68,7 +68,7 @@ export const Sidebar = ({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) 
               }}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition duration-150 ${
                 isActive
-                  ? 'bg-emerald-50 text-emerald-900 border border-emerald-300 shadow-xs'
+                  ? 'bg-indigo-50 text-indigo-950 border border-indigo-300 shadow-xs'
                   : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
@@ -76,7 +76,7 @@ export const Sidebar = ({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) 
                 {item.emojiIcon ? (
                   <span className="text-sm flex-shrink-0">{item.emojiIcon}</span>
                 ) : (
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-emerald-700' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
                 )}
                 <span className="font-extrabold text-xs tracking-tight text-slate-900">{item.label}</span>
               </div>
