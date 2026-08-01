@@ -50,8 +50,19 @@ export const AppProvider = ({ children }) => {
 
   const [currentUser, setCurrentUserState] = useState(() => {
     const saved = localStorage.getItem('srs_current_user');
-    return saved ? JSON.parse(saved) : { name: 'Gurram Karthikeya (Super Admin)', email: 'karthikeyanetha7@gmail.com', role: 'Super Admin' };
+    return saved ? JSON.parse(saved) : { name: 'Dustin (Super Admin)', email: 'admin@sreeramsena.org', role: 'Super Admin' };
   });
+
+  // Emergency Collector Lock System
+  const [emergencyLock, setEmergencyLock] = useState(false);
+
+  const toggleEmergencyLock = () => {
+    setEmergencyLock(prev => {
+      const nextState = !prev;
+      logAction(currentUser?.name || 'Super Admin', role, nextState ? '🚨 EMERGENCY LOCK ACTIVATED' : '🟢 EMERGENCY LOCK LIFTED', {});
+      return nextState;
+    });
+  };
 
   const setRole = (newRole) => {
     setRoleState(newRole);
@@ -78,8 +89,9 @@ export const AppProvider = ({ children }) => {
   const [registeredUsers, setRegisteredUsers] = useState(() => {
     const saved = localStorage.getItem('srs_registered_users');
     return saved ? JSON.parse(saved) : [
-      { id: '1', name: 'Gurram Karthikeya', email: 'karthikeyanetha7@gmail.com', role: 'Super Admin', status: 'Approved' },
-      { id: '2', name: 'Ramesh Kumar', email: 'ramesh@sreeramsena.org', role: 'Collector', status: 'Approved' }
+      { id: '1', name: 'Dustin (Super Admin)', email: 'admin@sreeramsena.org', role: 'Super Admin', status: 'Approved' },
+      { id: '2', name: 'Prince (Collector)', email: 'prince@sreeramsena.org', role: 'Collector', status: 'Approved' },
+      { id: '3', name: 'Jony (Collector)', email: 'jony@sreeramsena.org', role: 'Collector', status: 'Approved' }
     ];
   });
 
@@ -113,6 +125,13 @@ export const AppProvider = ({ children }) => {
     logAction(currentUser?.name || 'Super Admin', role, 'Rejected User Account', { userId });
   };
 
+  const updateUserStatus = (userId, newStatus) => {
+    const updated = registeredUsers.map(u => u.id === userId ? { ...u, status: newStatus } : u);
+    setRegisteredUsers(updated);
+    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+    logAction(currentUser?.name || 'Super Admin', role, `Updated Account Status to ${newStatus}`, { userId });
+  };
+
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [committeeInfo, setCommitteeInfo] = useState(initialCommitteeInfo);
   
@@ -125,7 +144,7 @@ export const AppProvider = ({ children }) => {
   ]);
 
   const [notifications, setNotifications] = useState([
-    { id: 1, text: "Welcome to SREE RAM SENA Divine Manager 2026! System reset to 0 for fresh festival setup.", time: "Just now", type: "system" }
+    { id: 1, text: "Welcome to SREE RAM SENA Divine Manager 2026! System ready for festival management.", time: "Just now", type: "system" }
   ]);
 
   // OFFLINE STORAGE SYNC ENGINE
@@ -203,6 +222,11 @@ export const AppProvider = ({ children }) => {
 
   // ADD DONATION
   const addDonation = (donationData) => {
+    if (emergencyLock && role === 'Collector') {
+      alert("🚨 Emergency Lock Active: Collector donation entries are temporarily disabled by Super Admin.");
+      return null;
+    }
+
     const receiptNo = getNextReceiptNo();
     const today = new Date().toISOString().split('T')[0];
 
@@ -214,7 +238,7 @@ export const AppProvider = ({ children }) => {
       address: donationData.address || 'Govindhupalli, Jagtial',
       amount: parseFloat(donationData.amount) || 0,
       paymentMethod: donationData.paymentMethod || 'UPI',
-      collectorName: currentUser?.name || 'Gurram Karthikeya (Super Admin)',
+      collectorName: currentUser?.name || 'Dustin (Super Admin)',
       date: today,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       verified: true,
@@ -321,7 +345,7 @@ export const AppProvider = ({ children }) => {
       amount: parseFloat(expenseData.amount) || 0,
       category: expenseData.category || 'Decorations',
       paymentMethod: expenseData.paymentMethod || 'UPI',
-      approvedBy: currentUser?.name || 'Gurram Karthikeya (Super Admin)',
+      approvedBy: currentUser?.name || 'Dustin (Super Admin)',
       date: today,
       status: 'Approved',
       notes: expenseData.notes || 'Festival expense voucher'
@@ -437,6 +461,9 @@ export const AppProvider = ({ children }) => {
       registerUser,
       approveUser,
       rejectUser,
+      updateUserStatus,
+      emergencyLock,
+      toggleEmergencyLock,
       isOnline,
       committeeInfo,
       setCommitteeInfo,
