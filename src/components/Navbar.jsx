@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { ProductionHealthBadge } from './ProductionHealthBadge';
 import { 
   Mic, 
   Globe, 
@@ -15,7 +16,8 @@ import {
   WifiOff,
   UserCheck,
   Lock,
-  MessageSquare
+  MessageSquare,
+  FileText
 } from 'lucide-react';
 
 export const Navbar = ({ 
@@ -26,7 +28,8 @@ export const Navbar = ({
   onOpenAdminUsers, 
   onOpenAiChat,
   onOpenLogin,
-  onOpenWhatsApp
+  onOpenWhatsApp,
+  onOpenAuditLog
 }) => {
   const { lang, setLang, t, role, notifications, committeeInfo, isOnline } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -36,7 +39,7 @@ export const Navbar = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2">
           
-          {/* Left: Mobile menu toggle + Branding */}
+          {/* Left: Mobile menu toggle + Branding + Health Badge */}
           <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
             <button
               onClick={onToggleMobileSidebar}
@@ -64,6 +67,9 @@ export const Navbar = ({
                 </p>
               </div>
             </div>
+
+            {/* Live Production Health Status Badge */}
+            <ProductionHealthBadge />
           </div>
 
           {/* Middle: Search bar (Desktop only) */}
@@ -83,6 +89,18 @@ export const Navbar = ({
           {/* Right: Actions aligned for mobile and desktop */}
           <div className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar py-1">
             
+            {/* Audit Log Button (Super Admin) */}
+            {role === 'Super Admin' && (
+              <button
+                onClick={onOpenAuditLog}
+                className="hidden lg:flex items-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-800 px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex-shrink-0"
+                title="Security & System Audit Log"
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Audit Log</span>
+              </button>
+            )}
+
             {/* WhatsApp Automation Control Button (Desktop) */}
             <button
               onClick={onOpenWhatsApp}

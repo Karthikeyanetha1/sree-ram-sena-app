@@ -10,6 +10,7 @@ import { AiOcrModal } from './components/AiOcrModal';
 import { LoginModal } from './components/LoginModal';
 import { WhatsAppAutomationModal } from './components/WhatsAppAutomationModal';
 import { BroadcastModal } from './components/BroadcastModal';
+import { AuditLogModal } from './components/AuditLogModal';
 
 import { DashboardView } from './views/DashboardView';
 import { DonationsView } from './views/DonationsView';
@@ -38,6 +39,7 @@ const MainAppContent = () => {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [receiptModalDonation, setReceiptModalDonation] = useState(null);
   const [newDonationModalOpen, setNewDonationModalOpen] = useState(false);
   const [newExpenseModalOpen, setNewExpenseModalOpen] = useState(false);
@@ -93,6 +95,7 @@ const MainAppContent = () => {
         onOpenAiChat={() => setAiChatOpen(true)}
         onOpenLogin={() => setLoginOpen(true)}
         onOpenWhatsApp={() => setBroadcastOpen(true)}
+        onOpenAuditLog={() => setAuditLogOpen(true)}
       />
 
       {/* Main Container */}
@@ -209,6 +212,11 @@ const MainAppContent = () => {
       <BroadcastModal
         isOpen={broadcastOpen}
         onClose={() => setBroadcastOpen(false)}
+      />
+
+      <AuditLogModal
+        isOpen={auditLogOpen}
+        onClose={() => setAuditLogOpen(false)}
       />
 
     </div>
