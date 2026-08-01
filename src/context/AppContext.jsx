@@ -41,7 +41,7 @@ export const AppProvider = ({ children }) => {
   // Persisted Auth State
   const [isAuthenticated, setIsAuthenticatedState] = useState(() => {
     const savedAuth = localStorage.getItem('srs_authenticated');
-    return savedAuth !== 'false'; // Defaults to authenticated initial view or saved session
+    return savedAuth === 'true'; // Defaults to clean Index Login page
   });
 
   const [role, setRoleState] = useState(() => {
