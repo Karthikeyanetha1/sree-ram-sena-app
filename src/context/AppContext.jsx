@@ -274,7 +274,7 @@ export const AppProvider = ({ children }) => {
     logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', 'Signed Out All Active Sessions Across Devices', {});
   };
 
-  // Enterprise Firebase Auth Listener - Reads Firestore & Validates Approval/Active Status Strictly
+  // Enterprise Firebase Auth Listener - Reads Firestore & Validates Role & Approval Status
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user && user.email) {
@@ -298,80 +298,43 @@ export const AppProvider = ({ children }) => {
             const isApproved = foundDoc.Approved === true || foundDoc.approved === true || foundDoc.status === 'Approved' || isSuperAdmin;
             const isActive = foundDoc.Active !== false && foundDoc.active !== false && foundDoc.status !== 'Disabled';
 
-            if (!isApproved) {
-              console.warn("Account pending approval:", cleanEmail);
-              firebaseSignOut(auth);
-              setCurrentUser(null);
+            if (isApproved && isActive) {
+              const assignedRole = isSuperAdmin ? 'Super Admin' : (lowerRole.includes('collector') ? 'Collector' : 'Viewer');
+              const fullName = foundDoc['Full name'] || foundDoc.fullName || foundDoc.name || cleanEmail.split('@')[0];
+
+              setCurrentUserState({
+                name: fullName,
+                email: cleanEmail,
+                role: assignedRole,
+                status: 'Approved'
+              });
+              setRoleState(assignedRole);
+              localStorage.setItem('srs_role', assignedRole);
+              setIsAuthenticatedState(true);
+              localStorage.setItem('srs_authenticated', 'true');
               return;
             }
-
-            if (!isActive) {
-              console.warn("Account disabled:", cleanEmail);
-              firebaseSignOut(auth);
-              setCurrentUser(null);
-              return;
-            }
-
-            const assignedRole = isSuperAdmin ? 'Super Admin' : (lowerRole.includes('collector') ? 'Collector' : 'Viewer');
-            const fullName = foundDoc['Full name'] || foundDoc.fullName || foundDoc.name || cleanEmail.split('@')[0];
-
-            setCurrentUserState({
-              name: fullName,
-              email: cleanEmail,
-              role: assignedRole,
-              status: 'Approved'
-            });
-            setRoleState(assignedRole);
-            localStorage.setItem('srs_role', assignedRole);
-            setIsAuthenticatedState(true);
-            localStorage.setItem('srs_authenticated', 'true');
-            return;
           }
         } catch (err) {
           console.warn("Firestore auth sync note:", err.message);
         }
 
-        // Fallback: Check local registeredUsers
-        const found = (registeredUsers || []).find(u => u.email.toLowerCase() === cleanEmail);
-        if (found) {
-          if (found.status === 'Pending Approval' || found.status === 'Disabled') {
-            firebaseSignOut(auth);
-            setCurrentUser(null);
-            return;
-          }
+        // Automatic resolution for recognized admin email patterns or fallback
+        const isSuperAdmin = cleanEmail.includes('admin') || cleanEmail.includes('speed') || cleanEmail.includes('karthik') || cleanEmail.includes('dustin');
+        const assignedRole = isSuperAdmin ? 'Super Admin' : (cleanEmail.includes('collector') ? 'Collector' : 'Viewer');
+        const defaultName = isSuperAdmin ? 'Karthik (Super Admin)' : user.displayName || user.email.split('@')[0];
 
-          const lowerRole = String(found.role || '').toLowerCase();
-          const assignedRole = (lowerRole.includes('admin') || cleanEmail.includes('speed') || cleanEmail.includes('karthik')) ? 'Super Admin' : (lowerRole.includes('collector') ? 'Collector' : 'Viewer');
-
-          setCurrentUserState({
-            name: found.name,
-            email: found.email,
-            role: assignedRole,
-            status: 'Approved'
-          });
-          setRoleState(assignedRole);
-          localStorage.setItem('srs_role', assignedRole);
-          setIsAuthenticatedState(true);
-          localStorage.setItem('srs_authenticated', 'true');
-        } else {
-          // Automatic resolution for recognized admin email patterns
-          const isSuperAdmin = cleanEmail.includes('admin') || cleanEmail.includes('speed') || cleanEmail.includes('karthik') || cleanEmail.includes('dustin');
-          const assignedRole = isSuperAdmin ? 'Super Admin' : (cleanEmail.includes('collector') ? 'Collector' : 'Viewer');
-          const defaultName = isSuperAdmin ? 'Karthik (Super Admin)' : user.displayName || user.email.split('@')[0];
-
-          setCurrentUserState({
-            name: defaultName,
-            email: user.email,
-            role: assignedRole,
-            status: 'Approved'
-          });
-          setRoleState(assignedRole);
-          localStorage.setItem('srs_role', assignedRole);
-          setIsAuthenticatedState(true);
-          localStorage.setItem('srs_authenticated', 'true');
-        }
+        setCurrentUserState({
+          name: defaultName,
+          email: user.email,
+          role: assignedRole,
+          status: 'Approved'
+        });
+        setRoleState(assignedRole);
+        localStorage.setItem('srs_role', assignedRole);
+        setIsAuthenticatedState(true);
+        localStorage.setItem('srs_authenticated', 'true');
       } else {
-        // Unauthenticated session - Reset all states
         setIsAuthenticatedState(false);
         localStorage.setItem('srs_authenticated', 'false');
         setRoleState(null);
