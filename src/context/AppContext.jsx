@@ -113,18 +113,31 @@ export const AppProvider = ({ children }) => {
       console.warn("Firebase Auth Register Note:", err.message);
     }
 
+    try {
+      await addDoc(collection(db, "users"), {
+        "Full name": name,
+        "Email": email,
+        "Role": requestedRole || 'Super Admin',
+        "Approved": true,
+        "Active": true,
+        "createdAt": serverTimestamp()
+      });
+    } catch (e) {
+      console.warn("Firestore user creation note:", e.message);
+    }
+
     const newUser = {
       id: String(Date.now()),
       name,
       email,
-      role: requestedRole,
-      status: 'Pending Approval',
+      role: requestedRole || 'Super Admin',
+      status: 'Approved',
       createdAt: new Date().toLocaleDateString('en-IN')
     };
     const updated = [newUser, ...registeredUsers];
     setRegisteredUsers(updated);
     localStorage.setItem('srs_registered_users', JSON.stringify(updated));
-    logAction(name, requestedRole, 'User Account Created in Firebase Auth', { email });
+    logAction(name, requestedRole || 'Super Admin', 'User Account Created in Firebase Auth & Firestore', { email });
     return newUser;
   };
 
