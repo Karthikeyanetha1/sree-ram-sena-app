@@ -260,6 +260,8 @@ export const LoginPage = ({ onLoginSuccess }) => {
       return;
     }
 
+    const cleanInput = signUpIdentifier.trim().toLowerCase();
+
     // Strict 8-character combination validation rule for Visitor / Collector Sign Ups
     const hasAlpha = /[a-zA-Z]/.test(signUpPassword);
     const hasNum = /[0-9]/.test(signUpPassword);
@@ -275,25 +277,46 @@ export const LoginPage = ({ onLoginSuccess }) => {
       return;
     }
 
+    // 1. Check for Duplicate Email or Mobile Number in Firestore
+    try {
+      const q = query(collection(db, "users"));
+      const snapshot = await getDocs(q);
+      const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const foundDuplicate = docs.find(d => 
+        (d.Email && d.Email.toLowerCase() === cleanInput) || 
+        (d.email && d.email.toLowerCase() === cleanInput) ||
+        (d.Mobile && String(d.Mobile).replace(/\D/g, '') === cleanInput.replace(/\D/g, '')) ||
+        (d.mobile && String(d.mobile).replace(/\D/g, '') === cleanInput.replace(/\D/g, ''))
+      );
+
+      if (foundDuplicate) {
+        setError(`🚨 Account Already Exists: An account with this Email/Mobile (${cleanInput}) is already registered. Please switch to Log In.`);
+        return; // STOP EXECUTION!
+      }
+    } catch (err) {
+      console.warn("Duplicate check note:", err.message);
+    }
+
     // Public Sign Ups are explicitly restricted to Collector or Viewer roles only
     const publicRole = selectedSignUpRole === 'Collector' ? 'Collector' : 'Viewer';
 
-    await registerUser(signUpName, signUpIdentifier, signUpPassword, publicRole);
+    // Register user with Approved: false & status: 'Pending Approval'
+    await registerUser(signUpName, cleanInput, signUpPassword, publicRole);
 
-    setMessage(`✓ Account created successfully for ${signUpName} (${publicRole})! Redirecting...`);
-    
-    // Auto login as requested role
-    setRole(publicRole);
-    setCurrentUser({
-      name: signUpName,
-      email: signUpIdentifier,
-      role: publicRole,
-      status: 'Approved'
-    });
+    // Display Pending Approval Message (DO NOT LOG THEM IN!)
+    setMessage(`⏳ Registration Submitted Successfully for ${signUpName} (${publicRole})! Your account is awaiting Super Admin approval. Once approved by the Super Admin, you can log in with your credentials.`);
 
+    // Reset sign up form
+    setSignUpName('');
+    setSignUpIdentifier('');
+    setSignUpPassword('');
+    setSignUpConfirmPassword('');
+
+    // Switch back to Login tab after 2.5 seconds
     setTimeout(() => {
-      if (onLoginSuccess) onLoginSuccess();
-    }, 800);
+      setActiveTab('login');
+      setLoginIdentifier(cleanInput);
+    }, 2500);
   };
 
   return (
