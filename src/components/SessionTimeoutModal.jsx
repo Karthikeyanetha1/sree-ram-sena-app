@@ -19,11 +19,11 @@ export const SessionTimeoutModal = () => {
       setShowWarning(false);
       setCountdown(60);
 
-      // 30 Minutes Inactivity Timeout (30 * 60 * 1000 = 1,800,000 ms)
+      // 15 Minutes Inactivity Timeout (15 * 60 * 1000 = 900,000 ms)
       inactivityTimer = setTimeout(() => {
         setShowWarning(true);
         startWarningCountdown();
-      }, 1800000);
+      }, 900000);
     };
 
     const startWarningCountdown = () => {

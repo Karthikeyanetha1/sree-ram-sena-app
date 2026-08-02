@@ -191,17 +191,19 @@ export const LoginPage = ({ onLoginSuccess }) => {
       return;
     }
 
-    await registerUser(signUpName, signUpIdentifier, signUpPassword, selectedSignUpRole);
+    // Public Sign Ups are explicitly restricted to Collector or Viewer roles only
+    const publicRole = selectedSignUpRole === 'Collector' ? 'Collector' : 'Viewer';
 
-    setMessage(`✓ Account created successfully for ${signUpName}! Redirecting...`);
+    await registerUser(signUpName, signUpIdentifier, signUpPassword, publicRole);
+
+    setMessage(`✓ Account created successfully for ${signUpName} (${publicRole})! Redirecting...`);
     
-    // Auto login
-    const assignedRole = normalizeRole(selectedSignUpRole, signUpIdentifier);
-    setRole(assignedRole);
+    // Auto login as requested role
+    setRole(publicRole);
     setCurrentUser({
       name: signUpName,
       email: signUpIdentifier,
-      role: assignedRole,
+      role: publicRole,
       status: 'Approved'
     });
 
