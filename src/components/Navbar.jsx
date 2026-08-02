@@ -14,7 +14,12 @@ import {
   WifiOff,
   UserCheck,
   MessageSquare,
-  FileText
+  FileText,
+  LogOut,
+  User,
+  ChevronDown,
+  Lock,
+  Key
 } from 'lucide-react';
 
 export const Navbar = ({ 
@@ -28,8 +33,11 @@ export const Navbar = ({
   onOpenWhatsApp,
   onOpenAuditLog
 }) => {
-  const { lang, setLang, t, role, notifications, committeeInfo, isOnline } = useApp();
+  const { lang, setLang, t, role, notifications, committeeInfo, isOnline, isAuthenticated, currentUser, signOut } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const roleEmoji = role === 'Super Admin' ? '👑' : role === 'Collector' ? '🤝' : '👁️';
 
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-xs">
@@ -147,17 +155,104 @@ export const Navbar = ({
               </button>
             )}
 
-            {/* Auth Session Button */}
-            <button
-              onClick={onOpenLogin}
-              className="flex items-center space-x-1 bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1.5 rounded-xl text-xs font-extrabold shadow-sm transition flex-shrink-0"
-              title="Click to Log In or Switch Account"
-            >
-              <UserCheck className="w-3.5 h-3.5 text-teal-400" />
-              <span className="text-[11px] font-bold">{role}</span>
-            </button>
+            {/* AUTHENTICATED USER PROFILE MENU WITH LOGOUT FOR ALL ROLES */}
+            {isAuthenticated ? (
+              <div className="relative flex-shrink-0">
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-sm transition"
+                  title="Click to view Profile & Sign Out"
+                >
+                  <span className="text-xs">{roleEmoji}</span>
+                  <span className="text-[11px] font-bold max-w-[100px] truncate">{currentUser?.name || role}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                </button>
 
-            {/* Language Switcher */}
+                {showProfileMenu && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200/80 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                    
+                    {/* User Info Header */}
+                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm">{roleEmoji}</span>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs font-black text-slate-900 truncate">
+                            {currentUser?.name || 'Authenticated User'}
+                          </h4>
+                          <p className="text-[10px] text-slate-500 font-mono truncate">
+                            {currentUser?.email || 'authenticated@sreeramsena.org'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="bg-indigo-100 text-indigo-900 text-[9px] font-black px-2 py-0.5 rounded-full">
+                          {role}
+                        </span>
+                        <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          ✓ Signed In
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Menu Options */}
+                    <div className="p-1 space-y-0.5">
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          setLang(lang === 'en' ? 'te' : 'en');
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-between transition"
+                      >
+                        <span className="flex items-center space-x-2">
+                          <Globe className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Language ({lang === 'en' ? 'English' : 'తెలుగు'})</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-bold">{lang === 'en' ? 'TE' : 'EN'}</span>
+                      </button>
+
+                      {role === 'Super Admin' && (
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            onOpenAdminUsers();
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center space-x-2 transition"
+                        >
+                          <Users className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Admin User Roster</span>
+                        </button>
+                      )}
+
+                      {/* SIGN OUT / LOGOUT BUTTON (AVAILABLE FOR ALL ROLES: SUPER ADMIN, COLLECTOR, VIEWER) */}
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          signOut();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-black text-red-600 hover:bg-red-50 flex items-center space-x-2 transition mt-1 border-t border-slate-100 pt-2"
+                      >
+                        <LogOut className="w-3.5 h-3.5 text-red-600" />
+                        <span>🔒 Sign Out ({role})</span>
+                      </button>
+                    </div>
+
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Public Visitor (Unauthenticated) Log In Trigger */
+              <button
+                onClick={onOpenLogin}
+                className="flex items-center space-x-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-sm hover:from-indigo-700 hover:to-blue-700 transition flex-shrink-0"
+                title="Click to Log In"
+              >
+                <Key className="w-3.5 h-3.5 text-amber-300" />
+                <span>Log In</span>
+              </button>
+            )}
+
+            {/* Language Switcher Button (Compact) */}
             <button
               onClick={() => setLang(lang === 'en' ? 'te' : 'en')}
               className="flex items-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-800 px-2 py-1.5 rounded-xl text-xs font-bold transition flex-shrink-0"

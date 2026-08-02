@@ -77,7 +77,7 @@ export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2">
-              Welcome back, {currentUser?.name || 'Gurram Karthikeya'}!
+              Welcome back, {currentUser?.name || (role === 'Super Admin' ? 'Dustin (Super Admin)' : role === 'Collector' ? 'Prince (Collector)' : 'Devotee')}!
             </h1>
 
             <p className="text-xs sm:text-sm text-emerald-100/90 mt-1 max-w-xl flex items-center gap-2 font-medium">

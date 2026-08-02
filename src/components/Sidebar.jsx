@@ -11,11 +11,13 @@ import {
   ShieldCheck,
   MapPin,
   X,
-  Trophy
+  Trophy,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 
 export const Sidebar = ({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) => {
-  const { t, committeeInfo, role } = useApp();
+  const { t, committeeInfo, role, isAuthenticated, currentUser, signOut } = useApp();
 
   const navItems = [
     { id: 'dashboard', label: t.dashboard || 'Dashboard', icon: LayoutDashboard },
@@ -96,26 +98,39 @@ export const Sidebar = ({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) 
         })}
       </div>
 
-      {/* Footer Committee Profile Badge */}
-      <div className="p-3 m-3 bg-slate-50 rounded-2xl border border-slate-200/60">
+      {/* Footer Committee & Session Card */}
+      <div className="p-3 m-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-2">
         <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs flex-shrink-0">
-            <ShieldCheck className="w-4 h-4 text-emerald-700" />
+          <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold text-xs flex-shrink-0">
+            <ShieldCheck className="w-4 h-4 text-indigo-600" />
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="text-xs font-bold text-slate-900 truncate">
               {committeeInfo.name}
             </h4>
             <div className="flex items-center text-[10px] text-slate-500 space-x-1">
-              <MapPin className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+              <MapPin className="w-3 h-3 text-indigo-600 flex-shrink-0" />
               <span className="truncate">Govindhupalli, Jagtial</span>
             </div>
           </div>
         </div>
-        <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-500 font-medium">
-          <span>Role: <strong className="text-emerald-700">{role}</strong></span>
-          <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold">PWA Active</span>
+
+        <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+          <span>Role: <strong className="text-indigo-900 font-extrabold">{role}</strong></span>
+          <span className="bg-indigo-100 text-indigo-900 px-1.5 py-0.5 rounded-full font-bold">PWA Active</span>
         </div>
+
+        {/* LOGOUT BUTTON FOR ALL AUTHENTICATED ROLES (SUPER ADMIN, COLLECTOR, VIEWER) */}
+        {isAuthenticated && (
+          <button
+            onClick={signOut}
+            className="w-full mt-2 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-xs font-extrabold flex items-center justify-center space-x-1.5 transition border border-red-200"
+            title="Sign out of your session"
+          >
+            <LogOut className="w-3.5 h-3.5 text-red-600" />
+            <span>Sign Out ({role})</span>
+          </button>
+        )}
       </div>
 
     </div>

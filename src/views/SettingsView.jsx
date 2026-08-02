@@ -20,14 +20,31 @@ import {
   Key,
   Cloud,
   CheckCircle2,
-  Layers
+  Layers,
+  Smartphone,
+  Laptop,
+  LogOut,
+  Shield
 } from 'lucide-react';
 
 export const SettingsView = () => {
-  const { t, committeeInfo, setCommitteeInfo, exportBackupData, importBackupData, lang, setLang, role, freshSystemReset } = useApp();
+  const { 
+    t, 
+    committeeInfo, 
+    setCommitteeInfo, 
+    exportBackupData, 
+    importBackupData, 
+    lang, 
+    setLang, 
+    role, 
+    freshSystemReset,
+    loginHistory,
+    activeSessions,
+    signOutAllDevices
+  } = useApp();
 
   const [formState, setFormState] = useState({ ...committeeInfo });
-  const [activeSubTab, setActiveSubTab] = useState('profile'); // 'profile' | 'integrations' | 'backup'
+  const [activeSubTab, setActiveSubTab] = useState('profile'); // 'profile' | 'integrations' | 'security' | 'backup'
 
   // Meta Cloud API Credentials State
   const [metaToken, setMetaToken] = useState(localStorage.getItem('meta_whatsapp_token') || '');
@@ -79,10 +96,10 @@ export const SettingsView = () => {
       </div>
 
       {/* Sub Tabs */}
-      <div className="flex items-center space-x-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveSubTab('profile')}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition flex-shrink-0 ${
             activeSubTab === 'profile' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
@@ -93,7 +110,7 @@ export const SettingsView = () => {
         {role === 'Super Admin' && (
           <button
             onClick={() => setActiveSubTab('integrations')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition flex-shrink-0 ${
               activeSubTab === 'integrations' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -102,9 +119,21 @@ export const SettingsView = () => {
           </button>
         )}
 
+        {role === 'Super Admin' && (
+          <button
+            onClick={() => setActiveSubTab('security')}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition flex-shrink-0 ${
+              activeSubTab === 'security' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Shield className="w-4 h-4 text-amber-300" />
+            <span>Security & Sessions</span>
+          </button>
+        )}
+
         <button
           onClick={() => setActiveSubTab('backup')}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition flex-shrink-0 ${
             activeSubTab === 'backup' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
@@ -287,7 +316,93 @@ export const SettingsView = () => {
         </div>
       )}
 
-      {/* TAB 3: BACKUP & SYSTEM RESET */}
+      {/* TAB 3: SECURITY, LOGIN HISTORY & ACTIVE SESSIONS (Super Admin Only) */}
+      {activeSubTab === 'security' && role === 'Super Admin' && (
+        <div className="space-y-6">
+          
+          {/* Active Sessions Card */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-soft-card space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <Shield className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-extrabold text-base text-slate-900">Active Sessions across Devices</h3>
+              </div>
+
+              <button
+                onClick={signOutAllDevices}
+                className="bg-red-600 hover:bg-red-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center space-x-1.5 shadow-sm transition"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out All Devices</span>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {activeSessions.map((session) => (
+                <div key={session.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs font-semibold">
+                  <div className="flex items-center space-x-3">
+                    {session.device.includes('Mobile') ? (
+                      <Smartphone className="w-5 h-5 text-indigo-600" />
+                    ) : (
+                      <Laptop className="w-5 h-5 text-indigo-600" />
+                    )}
+                    <div>
+                      <div className="font-extrabold text-slate-900 flex items-center gap-2">
+                        <span>{session.device}</span>
+                        {session.current && (
+                          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full">
+                            Current Device
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-slate-500 text-[11px]">{session.location} • {session.lastActive}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Login History Table */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-soft-card space-y-4">
+            <h3 className="font-extrabold text-base text-slate-900">Login History & Security Audit Log</h3>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-medium">
+                <thead className="bg-slate-50 text-slate-500 font-extrabold uppercase border-b border-slate-100">
+                  <tr>
+                    <th className="py-2.5 px-3">User</th>
+                    <th className="py-2.5 px-3">Device / OS</th>
+                    <th className="py-2.5 px-3">IP Address</th>
+                    <th className="py-2.5 px-3">Time</th>
+                    <th className="py-2.5 px-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {loginHistory.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50">
+                      <td className="py-2.5 px-3 font-extrabold text-slate-900">
+                        {item.user} <span className="text-[10px] text-slate-400 font-normal">({item.role})</span>
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-700">{item.device}</td>
+                      <td className="py-2.5 px-3 font-mono text-slate-500">{item.ip}</td>
+                      <td className="py-2.5 px-3 text-slate-500">{item.time}</td>
+                      <td className="py-2.5 px-3">
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full">
+                          ✓ {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* TAB 4: BACKUP & SYSTEM RESET */}
       {activeSubTab === 'backup' && (
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-soft-card space-y-4">
