@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Live Production Firebase Configuration for SREE RAM SENA Divine Manager
@@ -18,10 +18,5 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-
-// Automatic Firebase Auth Session Helper
-signInAnonymously(auth).catch((err) => {
-  console.log("Firebase Auth initial session info:", err.message);
-});
 
 export default app;

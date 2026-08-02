@@ -41,19 +41,21 @@ export const initialCommitteeInfo = {
 export const AppProvider = ({ children }) => {
   const [lang, setLang] = useState('en');
   
-  // Enterprise Strict Authentication State - ALWAYS Defaults to Unauthenticated
+  // Enterprise Strict Authentication State - Requires valid currentUser & role
   const [isAuthenticated, setIsAuthenticatedState] = useState(() => {
     const savedAuth = localStorage.getItem('srs_authenticated');
-    return savedAuth === 'true';
+    const savedUser = localStorage.getItem('srs_current_user');
+    const savedRole = localStorage.getItem('srs_role');
+    return savedAuth === 'true' && !!savedUser && !!savedRole;
   });
 
   const [role, setRoleState] = useState(() => {
-    return localStorage.getItem('srs_role') || null;
+    return localStorage.getItem('srs_role') || 'Viewer';
   });
 
   const [currentUser, setCurrentUserState] = useState(() => {
     const saved = localStorage.getItem('srs_current_user');
-    return saved ? JSON.parse(saved) : null;
+    return saved ? JSON.parse(saved) : { name: 'Devotee', email: '', role: 'Viewer', status: 'Approved' };
   });
 
   // Emergency Collector Lock System
@@ -106,9 +108,9 @@ export const AppProvider = ({ children }) => {
     }
     setIsAuthenticatedState(false);
     localStorage.setItem('srs_authenticated', 'false');
-    setRoleState(null);
-    localStorage.removeItem('srs_role');
-    setCurrentUserState(null);
+    setRoleState('Viewer');
+    localStorage.setItem('srs_role', 'Viewer');
+    setCurrentUserState({ name: 'Public Devotee', email: '', role: 'Viewer', status: 'Approved' });
     localStorage.removeItem('srs_current_user');
   };
 
