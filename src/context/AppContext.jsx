@@ -17,7 +17,8 @@ import {
   getDocs,
   serverTimestamp, 
   query, 
-  where 
+  where,
+  orderBy 
 } from 'firebase/firestore';
 
 const AppContext = createContext();
@@ -611,4 +612,49 @@ export const AppProvider = ({ children }) => {
   );
 };
 
-export const useApp = () => useContext(AppContext);
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    console.warn("useApp called outside AppProvider context, active fallback context returned.");
+    return {
+      lang: 'en',
+      setLang: () => {},
+      role: 'Viewer',
+      setRole: () => {},
+      isAuthenticated: false,
+      setIsAuthenticatedState: () => {},
+      currentUser: { name: 'Devotee', email: '', role: 'Viewer', status: 'Approved' },
+      setCurrentUser: () => {},
+      signOut: () => {},
+      registeredUsers: [],
+      registerUser: async () => {},
+      createSuperAdminAccount: async () => {},
+      approveUser: () => {},
+      rejectUser: () => {},
+      updateUserStatus: () => {},
+      deleteUserAccount: () => {},
+      updateSuperAdminCredentials: () => {},
+      loginHistory: [],
+      activeSessions: [],
+      signOutAllDevices: () => {},
+      emergencyLock: false,
+      toggleEmergencyLock: () => {},
+      isOnline: true,
+      committeeInfo: initialCommitteeInfo,
+      setCommitteeInfo: () => {},
+      donations: [],
+      expenses: [],
+      ladduBids: [],
+      notifications: [],
+      addDonation: () => {},
+      addExpense: () => {},
+      freshSystemReset: () => {},
+      t: {
+        appName: "SREE RAM SENA",
+        appSubName: "Divine Manager 2026",
+        searchPlaceholder: "Search donor, receipt #, mobile..."
+      }
+    };
+  }
+  return context;
+};

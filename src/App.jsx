@@ -275,11 +275,11 @@ class ErrorBoundary extends React.Component {
 
 export function App() {
   return (
-    <ErrorBoundary>
-      <AppProvider>
+    <AppProvider>
+      <ErrorBoundary>
         <MainAppContent />
-      </AppProvider>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </AppProvider>
   );
 }
 

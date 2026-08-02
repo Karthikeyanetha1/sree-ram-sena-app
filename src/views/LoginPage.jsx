@@ -171,6 +171,24 @@ export const LoginPage = ({ onLoginSuccess }) => {
     }, 500);
   };
 
+  const handlePasswordReset = async () => {
+    setError('');
+    setMessage('');
+    const cleanEmail = loginIdentifier.trim().toLowerCase();
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError('Please enter your valid email address above to receive a password reset link.');
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, cleanEmail);
+      setMessage(`✓ Password reset link dispatched to ${cleanEmail}. Check your inbox!`);
+    } catch (err) {
+      setError(`Password reset notice: ${err.message}`);
+    }
+  };
+
   const handleSignUpSubmit = async (e) => {
     e.preventDefault();
     setError('');
