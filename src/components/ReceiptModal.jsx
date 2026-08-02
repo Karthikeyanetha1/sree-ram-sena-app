@@ -20,6 +20,8 @@ import {
   ArrowLeft,
   ExternalLink
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import confetti from 'canvas-confetti';
 
 export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
@@ -40,9 +42,56 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
     window.print();
   };
 
-  const handleWhatsApp = () => {
-    const link = generateWhatsAppLink(donation, committeeInfo);
-    window.open(link, '_blank');
+  const handleDownloadPdf = async () => {
+    try {
+      const receiptElem = document.getElementById('receipt-printable-area');
+      if (!receiptElem) {
+        window.print();
+        return;
+      }
+      const canvas = await html2canvas(receiptElem, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`SRS-Receipt-${donation.receiptNo || '2026'}.pdf`);
+    } catch (err) {
+      console.warn("PDF generation fallback to print:", err);
+      window.print();
+    }
+  };
+
+  const handleWhatsApp = async () => {
+    const waLink = generateWhatsAppLink(donation, committeeInfo);
+
+    if (navigator.share && navigator.canShare) {
+      try {
+        const receiptElem = document.getElementById('receipt-printable-area');
+        if (receiptElem) {
+          const canvas = await html2canvas(receiptElem, { scale: 2, useCORS: true });
+          canvas.toBlob(async (blob) => {
+            if (blob) {
+              const file = new File([blob], `SRS-Receipt-${donation.receiptNo || '2026'}.png`, { type: 'image/png' });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                  title: `SREE RAM SENA Official Receipt ${donation.receiptNo}`,
+                  text: `🙏 Official Receipt for ${donation.donorName} - ₹${donation.amount}\n📄 View Online: https://sree-ram-sena-app.vercel.app/?receiptNo=${donation.receiptNo}`,
+                  files: [file]
+                });
+                return;
+              }
+            }
+            window.open(waLink, '_blank');
+          }, 'image/png');
+          return;
+        }
+      } catch (err) {
+        console.warn("Web Share API note:", err);
+      }
+    }
+
+    window.open(waLink, '_blank');
   };
 
   const handleBackHome = () => {
@@ -356,7 +405,7 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
             </button>
 
             <button
-              onClick={handlePrint}
+              onClick={handleDownloadPdf}
               className="flex items-center space-x-1.5 bg-emerald-950 hover:bg-black text-white px-4 py-2.5 rounded-xl text-xs font-extrabold transition shadow-sm"
             >
               <Download className="w-4 h-4" />

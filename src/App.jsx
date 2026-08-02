@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import { db } from './firebase/config';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { VoiceAssistantModal } from './components/VoiceAssistantModal';
@@ -27,7 +29,7 @@ import { LadduAuctionView } from './views/LadduAuctionView';
 import { LeaderboardView } from './views/LeaderboardView';
 
 const MainAppContent = () => {
-  const { addDonation, addExpense, role, isAuthenticated, setIsAuthenticatedState } = useApp();
+  const { donations, addDonation, addExpense, role, isAuthenticated, setIsAuthenticatedState } = useApp();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -47,6 +49,39 @@ const MainAppContent = () => {
   const [receiptModalDonation, setReceiptModalDonation] = useState(null);
   const [newDonationModalOpen, setNewDonationModalOpen] = useState(false);
   const [newExpenseModalOpen, setNewExpenseModalOpen] = useState(false);
+
+  // Public Receipt Link Listener (e.g. ?receiptNo=SRS-2026-000005)
+  const [publicReceiptDonation, setPublicReceiptDonation] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const targetNo = params.get('receiptNo') || params.get('receipt');
+
+    if (targetNo) {
+      const found = (donations || []).find(d => d.receiptNo === targetNo);
+      if (found) {
+        setPublicReceiptDonation(found);
+      } else {
+        getDocs(query(collection(db, "donations"), where("receiptNo", "==", targetNo)))
+          .then(snapshot => {
+            if (!snapshot.empty) {
+              setPublicReceiptDonation({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
+            }
+          }).catch(e => console.warn("Public receipt load note:", e));
+      }
+    }
+  }, [donations]);
+
+  if (publicReceiptDonation) {
+    return (
+      <ReceiptModal 
+        donation={publicReceiptDonation} 
+        isOpen={true} 
+        onClose={() => setPublicReceiptDonation(null)}
+        onNavigateHome={() => setPublicReceiptDonation(null)}
+      />
+    );
+  }
 
   // If user is unauthenticated or explicitly signed out, render LoginPage Portal landing view!
   if (!isAuthenticated) {
