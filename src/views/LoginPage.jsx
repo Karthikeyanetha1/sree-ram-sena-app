@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { auth, db } from '../firebase/config';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { 
   ShieldCheck, 
@@ -304,9 +304,18 @@ export const LoginPage = ({ onLoginSuccess }) => {
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">
-                  Password
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-slate-700 font-bold">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handlePasswordReset}
+                    className="text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 transition"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
