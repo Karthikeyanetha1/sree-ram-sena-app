@@ -90,13 +90,20 @@ export const AppProvider = ({ children }) => {
       return;
     }
 
-    setCurrentUserState(userObj);
-    localStorage.setItem('srs_current_user', JSON.stringify(userObj));
+    // Clean name formatting (Ensure no stale 'Dustin' mockup name remains)
+    let cleanName = userObj.name || 'Gurram Karthikeya';
+    if (cleanName.includes('Dustin')) {
+      cleanName = 'Gurram Karthikeya';
+    }
+
+    const updatedUserObj = { ...userObj, name: cleanName };
+    setCurrentUserState(updatedUserObj);
+    localStorage.setItem('srs_current_user', JSON.stringify(updatedUserObj));
     setIsAuthenticatedState(true);
     localStorage.setItem('srs_authenticated', 'true');
-    setRoleState(userObj.role);
-    localStorage.setItem('srs_role', userObj.role);
-    logAction(userObj.name, userObj.role, 'User Signed In', { email: userObj.email });
+    setRoleState(updatedUserObj.role);
+    localStorage.setItem('srs_role', updatedUserObj.role);
+    logAction(updatedUserObj.name, updatedUserObj.role, 'User Signed In', { email: updatedUserObj.email });
   };
 
   // Enterprise Clean Sign Out Handler
@@ -323,16 +330,19 @@ export const AppProvider = ({ children }) => {
         }
 
         // Automatic resolution for recognized admin email patterns or fallback
-        const isSuperAdmin = cleanEmail.includes('admin') || cleanEmail.includes('speed') || cleanEmail.includes('karthik') || cleanEmail.includes('dustin');
+        const isSuperAdmin = cleanEmail.includes('admin') || cleanEmail.includes('speed') || cleanEmail.includes('karthik');
         const assignedRole = isSuperAdmin ? 'Super Admin' : (cleanEmail.includes('collector') ? 'Collector' : 'Viewer');
-        const defaultName = isSuperAdmin ? 'Karthik (Super Admin)' : user.displayName || user.email.split('@')[0];
+        const defaultName = isSuperAdmin ? 'Gurram Karthikeya' : user.displayName || user.email.split('@')[0];
 
-        setCurrentUserState({
+        const userObj = {
           name: defaultName,
           email: user.email,
           role: assignedRole,
           status: 'Approved'
-        });
+        };
+
+        setCurrentUserState(userObj);
+        localStorage.setItem('srs_current_user', JSON.stringify(userObj));
         setRoleState(assignedRole);
         localStorage.setItem('srs_role', assignedRole);
         setIsAuthenticatedState(true);

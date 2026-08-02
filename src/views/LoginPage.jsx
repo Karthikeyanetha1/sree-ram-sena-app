@@ -199,8 +199,13 @@ export const LoginPage = ({ onLoginSuccess }) => {
       return;
     }
 
-    if (signUpPassword.length < 6) {
-      setError('Password must be at least 6 characters long.');
+    // Strict 8-character combination validation rule for Visitor / Collector Sign Ups
+    const hasAlpha = /[a-zA-Z]/.test(signUpPassword);
+    const hasNum = /[0-9]/.test(signUpPassword);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(signUpPassword);
+
+    if (signUpPassword.length < 8 || !hasAlpha || !hasNum || !hasSpecial) {
+      setError('🔒 Password Security Rule: Must be at least 8 characters long and contain a combination of Alphabets (A-Z), Numbers (0-9), and Special Characters (@, #, $, %, etc.).');
       return;
     }
 
@@ -422,6 +427,9 @@ export const LoginPage = ({ onLoginSuccess }) => {
                     {showSignUpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className="text-[10px] text-slate-500 font-medium mt-1">
+                  🔒 Must be 8+ characters combining Alphabets (A-Z), Numbers (0-9) & Special Characters (@, #, $).
+                </p>
               </div>
 
               <div>
