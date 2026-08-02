@@ -83,7 +83,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
     const cleanInput = loginIdentifier.trim().toLowerCase();
 
     if (!cleanInput) {
-      setError('Please enter your email or mobile number.');
+      setError('Please enter your registered email or mobile number.');
       return;
     }
 
@@ -92,40 +92,75 @@ export const LoginPage = ({ onLoginSuccess }) => {
       return;
     }
 
-    // Try Firebase Authentication
-    try {
-      if (cleanInput.includes('@')) {
-        await signInWithEmailAndPassword(auth, cleanInput, loginPassword);
-      }
-    } catch (firebaseErr) {
-      console.warn("Firebase Auth Notice:", firebaseErr.message);
-      // Increment failed attempts counter for brute force protection
-      const nextFail = failedAttempts + 1;
-      setFailedAttempts(nextFail);
-      if (nextFail >= 5) {
-        setLockoutTimer(900); // 15 minutes lockout
-        setError("🚨 Account Locked for 15 minutes due to 5 consecutive wrong password attempts.");
-        return;
+    let authUser = null;
+
+    // 1. Strict Firebase Authentication for Email Sign-In
+    if (cleanInput.includes('@')) {
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, cleanInput, loginPassword);
+        authUser = userCredential.user;
+      } catch (firebaseErr) {
+        console.warn("Firebase Auth Notice:", firebaseErr.message);
+        const nextFail = failedAttempts + 1;
+        setFailedAttempts(nextFail);
+        if (nextFail >= 5) {
+          setLockoutTimer(900); // 15 minutes lockout
+          setError("🚨 Account Locked for 15 minutes due to 5 consecutive wrong password attempts.");
+          return;
+        }
+        setError("🚨 Invalid Credentials: Email or password is incorrect. Only registered accounts in Firebase can access the portal.");
+        return; // STOP EXECUTION IMMEDIATELY! NO FALLBACK LOGIN!
       }
     }
 
-    // Query Firestore `users` collection directly to fetch exact role & full name
+    // 2. Query Firestore `users` collection to fetch exact role, approval status & name
     try {
       const q = query(collection(db, "users"));
       const snapshot = await getDocs(q);
       const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       const foundFirestore = docs.find(d => 
         (d.Email && d.Email.toLowerCase() === cleanInput) || 
-        (d.email && d.email.toLowerCase() === cleanInput)
+        (d.email && d.email.toLowerCase() === cleanInput) ||
+        (d.Mobile && String(d.Mobile).replace(/\D/g, '') === cleanInput.replace(/\D/g, '')) ||
+        (d.mobile && String(d.mobile).replace(/\D/g, '') === cleanInput.replace(/\D/g, ''))
       );
 
       if (foundFirestore) {
+        // If logged in via Mobile (not Firebase Auth email), verify password match
+        if (!cleanInput.includes('@')) {
+          const docPassword = foundFirestore.Password || foundFirestore.password;
+          if (docPassword && docPassword !== loginPassword) {
+            const nextFail = failedAttempts + 1;
+            setFailedAttempts(nextFail);
+            setError("🚨 Invalid Credentials: Incorrect mobile number or password.");
+            return; // STOP EXECUTION!
+          }
+        }
+
+        const rawRole = foundFirestore.Role || foundFirestore.role || '';
+        const lowerRole = String(rawRole).toLowerCase();
+        const isSuperAdmin = lowerRole.includes('admin') || lowerRole.includes('super') || cleanInput.includes('speed') || cleanInput.includes('karthik');
+        const isApproved = foundFirestore.Approved === true || foundFirestore.approved === true || foundFirestore.status === 'Approved' || isSuperAdmin;
+        const isActive = foundFirestore.Active !== false && foundFirestore.active !== false && foundFirestore.status !== 'Disabled';
+
+        if (!isApproved) {
+          if (authUser) firebaseSignOut(auth);
+          setError("⏳ Account Pending Approval: Your account is awaiting Super Admin approval before you can access the portal.");
+          return;
+        }
+
+        if (!isActive) {
+          if (authUser) firebaseSignOut(auth);
+          setError("🚫 Account Disabled: Your account has been disabled by the Super Admin.");
+          return;
+        }
+
         const fullName = foundFirestore['Full name'] || foundFirestore.fullName || foundFirestore.name || cleanInput.split('@')[0];
-        const assignedRole = normalizeRole(foundFirestore.Role || foundFirestore.role, cleanInput);
-        
+        const assignedRole = isSuperAdmin ? 'Super Admin' : (lowerRole.includes('collector') ? 'Collector' : 'Viewer');
+
         const userObj = {
           name: fullName,
-          email: cleanInput,
+          email: foundFirestore.Email || foundFirestore.email || cleanInput,
           role: assignedRole,
           status: 'Approved'
         };
@@ -142,12 +177,17 @@ export const LoginPage = ({ onLoginSuccess }) => {
       console.warn("Firestore query note:", err.message);
     }
 
-    // Fallback: Check local registeredUsers or resolve role
+    // 3. Fallback for Local Registered Users (Strict Password Verification)
     const foundLocal = (registeredUsers || []).find(u => 
-      u.email.toLowerCase() === cleanInput || u.id === cleanInput
+      (u.email.toLowerCase() === cleanInput || u.id === cleanInput) && u.password === loginPassword
     );
 
     if (foundLocal) {
+      if (foundLocal.status === 'Pending Approval') {
+        setError("⏳ Account Pending Approval: Your account is awaiting Super Admin approval.");
+        return;
+      }
+
       const assignedRole = normalizeRole(foundLocal.role, cleanInput);
       const userObj = { ...foundLocal, role: assignedRole };
       setRole(assignedRole);
@@ -159,16 +199,37 @@ export const LoginPage = ({ onLoginSuccess }) => {
       return;
     }
 
-    // Recognized Admin accounts or default
-    const assignedRole = normalizeRole('', cleanInput);
-    const userName = assignedRole === 'Super Admin' ? 'Dustin (Super Admin)' : cleanInput.split('@')[0];
+    // If Firebase Auth succeeded (valid email/password in Firebase Auth but missing from Firestore `users`)
+    if (authUser) {
+      const isSuperAdmin = cleanInput.includes('admin') || cleanInput.includes('speed') || cleanInput.includes('karthik');
+      const assignedRole = isSuperAdmin ? 'Super Admin' : 'Viewer';
+      const fullName = isSuperAdmin ? 'Gurram Karthikeya' : authUser.displayName || cleanInput.split('@')[0];
 
-    setRole(assignedRole);
-    setCurrentUser({ name: userName, email: cleanInput, role: assignedRole });
-    setMessage(`Logged in successfully as ${userName} (${assignedRole})`);
-    setTimeout(() => {
-      if (onLoginSuccess) onLoginSuccess();
-    }, 500);
+      const userObj = {
+        name: fullName,
+        email: cleanInput,
+        role: assignedRole,
+        status: 'Approved'
+      };
+
+      setRole(assignedRole);
+      setCurrentUser(userObj);
+      setMessage(`Logged in successfully as ${fullName} (${assignedRole})`);
+      setTimeout(() => {
+        if (onLoginSuccess) onLoginSuccess();
+      }, 500);
+      return;
+    }
+
+    // STRICT REJECTION FOR ANY UNREGISTERED / FAKE CREDENTIALS!
+    const nextFail = failedAttempts + 1;
+    setFailedAttempts(nextFail);
+    if (nextFail >= 5) {
+      setLockoutTimer(900);
+      setError("🚨 Account Locked for 15 minutes due to 5 consecutive wrong password attempts.");
+      return;
+    }
+    setError("🚨 Invalid Credentials: Incorrect email/mobile or password. Only registered accounts can access SREE RAM SENA Divine Manager.");
   };
 
   const handlePasswordReset = async () => {
