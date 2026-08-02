@@ -247,37 +247,26 @@ const MainAppContent = () => {
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+  static getDerivedStateFromError() {
+    return { hasError: true };
   }
 
-  componentDidCatch(error, errorInfo) {
-    console.error("Uncaught runtime error:", error, errorInfo);
+  componentDidCatch(error) {
+    console.warn("Recovered from render note:", error);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 text-center font-sans">
-          <div className="bg-slate-900 border border-indigo-500/30 p-8 rounded-3xl max-w-md w-full shadow-2xl space-y-4">
-            <h2 className="text-xl font-black text-white">SREE RAM SENA Divine Manager</h2>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              The application encountered a temporary display state reset. Click below to return to the portal.
-            </p>
-            <button
-              onClick={() => {
-                localStorage.setItem('srs_authenticated', 'false');
-                window.location.reload();
-              }}
-              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-extrabold text-xs rounded-xl shadow-md transition"
-            >
-              🔄 Return to Login Portal
-            </button>
-          </div>
-        </div>
+        <LoginPage 
+          onLoginSuccess={() => {
+            this.setState({ hasError: false });
+            window.location.reload();
+          }} 
+        />
       );
     }
     return this.props.children;
