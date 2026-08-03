@@ -52,7 +52,7 @@ export default async function handler(req, res) {
   try {
     const db = admin.firestore();
     const cleanEmail = String(email).trim().toLowerCase();
-    const safeRole = (role === 'Collector' || role === 'collector') ? 'Collector' : 'Viewer';
+    const safeRole = (role === 'Collector') ? 'Collector' : 'Viewer';
 
     const docRef = await db.collection('users').add({
       "Full name": name,
