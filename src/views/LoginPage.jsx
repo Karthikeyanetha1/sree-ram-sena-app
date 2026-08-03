@@ -277,24 +277,17 @@ export const LoginPage = ({ onLoginSuccess }) => {
       return;
     }
 
-    // 1. Check for Duplicate Email or Mobile Number in Firestore
+    // 1. Server-side Duplicate Check via Firebase Admin API (/api/check-duplicate)
     try {
-      const q = query(collection(db, "users"));
-      const snapshot = await getDocs(q);
-      const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      const foundDuplicate = docs.find(d => 
-        (d.Email && d.Email.toLowerCase() === cleanInput) || 
-        (d.email && d.email.toLowerCase() === cleanInput) ||
-        (d.Mobile && String(d.Mobile).replace(/\D/g, '') === cleanInput.replace(/\D/g, '')) ||
-        (d.mobile && String(d.mobile).replace(/\D/g, '') === cleanInput.replace(/\D/g, ''))
-      );
-
-      if (foundDuplicate) {
-        setError(`🚨 Account Already Exists: An account with this Email/Mobile (${cleanInput}) is already registered. Please switch to Log In.`);
+      const res = await fetch(`/api/check-duplicate?email=${encodeURIComponent(cleanInput)}&mobile=${encodeURIComponent(cleanInput)}`);
+      const data = await res.json();
+      if (data.exists) {
+        const fieldName = data.field === 'mobile' ? 'Mobile' : 'Email';
+        setError(`🚨 Account Already Exists: An account with this ${fieldName} (${cleanInput}) is already registered. Please switch to Log In.`);
         return; // STOP EXECUTION!
       }
     } catch (err) {
-      console.warn("Duplicate check note:", err.message);
+      console.warn("Duplicate check API note:", err.message);
     }
 
     // Public Sign Ups are explicitly restricted to Collector or Viewer roles only
