@@ -90,8 +90,25 @@ export default async function handler(req, res) {
       return res.status(200).json({ locked: false, failedAttempts: currentFail });
     }
 
-    // Record Successful Login (Reset Lockout)
+    // Record Successful Login (Reset Lockout) - REQUIRES VALID FIREBASE AUTH ID TOKEN
     if (action === 'success') {
+      const authHeader = req.headers ? req.headers.authorization : null;
+      const idToken = (req.body && req.body.idToken) || (authHeader && authHeader.startsWith('Bearer ') ? authHeader.split('Bearer ')[1] : null);
+
+      if (!idToken) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Missing Firebase Auth ID token.' });
+      }
+
+      try {
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        if (!decodedToken || !decodedToken.uid) {
+          return res.status(401).json({ success: false, error: 'Unauthorized: Invalid ID token.' });
+        }
+      } catch (authErr) {
+        console.warn("verifyIdToken Note:", authErr.message);
+        return res.status(401).json({ success: false, error: 'Unauthorized: ID token verification failed.' });
+      }
+
       await docRef.update({
         failedLoginAttempts: 0,
         lockedUntil: null

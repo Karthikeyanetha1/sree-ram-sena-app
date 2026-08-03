@@ -132,13 +132,21 @@ export const LoginPage = ({ onLoginSuccess }) => {
     };
 
     // Helper for recording success
-    const recordSuccess = () => {
+    const recordSuccess = async () => {
       try {
-        fetch('/api/login-check', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'success', email: cleanInput })
-        }).catch(e => console.warn("Reset lock note:", e.message));
+        let idToken = null;
+        if (authUser) {
+          idToken = await authUser.getIdToken();
+        } else if (auth.currentUser) {
+          idToken = await auth.currentUser.getIdToken();
+        }
+        if (idToken) {
+          fetch('/api/login-check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'success', email: cleanInput, idToken })
+          }).catch(e => console.warn("Reset lock note:", e.message));
+        }
       } catch (e) {}
     };
 
