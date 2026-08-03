@@ -459,10 +459,8 @@ export const AppProvider = ({ children }) => {
         ...doc.data(),
         amount: parseFloat(doc.data().amount || doc.data().Amount) || 0
       }));
-      if (liveData.length > 0) {
-        setExpenses(liveData);
-        localStorage.setItem('srs_expenses', JSON.stringify(liveData));
-      }
+      setExpenses(liveData);
+      localStorage.setItem('srs_expenses', JSON.stringify(liveData));
     }, (error) => {
       console.warn("Firestore live expenses listener note:", error.message);
     });
