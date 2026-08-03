@@ -22,7 +22,7 @@ service cloud.firestore {
     }
 
     function userRole() {
-      return userDoc().role;
+      return 'Role' in userDoc() ? userDoc().Role : ('role' in userDoc() ? userDoc().role : '');
     }
 
     function isSuperAdmin() {

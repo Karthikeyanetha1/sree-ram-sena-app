@@ -370,8 +370,15 @@ export const AppProvider = ({ children }) => {
   const [committeeInfo, setCommitteeInfo] = useState(initialCommitteeInfo);
   
   // LEDGER DATA & LADDU BIDS
-  const [donations, setDonations] = useState([]);
-  const [expenses, setExpenses] = useState([]);
+  // LEDGER DATA & LADDU BIDS
+  const [donations, setDonations] = useState(() => {
+    const saved = localStorage.getItem('srs_donations');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [expenses, setExpenses] = useState(() => {
+    const saved = localStorage.getItem('srs_expenses');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [ladduBids, setLadduBids] = useState([
     { id: 1, bidderName: 'Roi Govindhupalli', mobile: '9887665541', amount: 50000, time: '10:30 AM', status: 'Leading Bidder 🏆' },
     { id: 2, bidderName: 'Ramesh Sharma', mobile: '9876543210', amount: 45000, time: '10:15 AM', status: 'Outbid' }
@@ -413,17 +420,30 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
-  // FIRESTORE REAL-TIME LISTENER FOR DONATIONS
+  // FIRESTORE REAL-TIME LISTENER FOR DONATIONS (Without restrictive orderBy to prevent dropping docs)
   useEffect(() => {
-    const q = query(collection(db, "donations"), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "donations"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const liveData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        amount: parseFloat(doc.data().amount) || 0
-      }));
+      const liveData = snapshot.docs.map(doc => {
+        const d = doc.data();
+        return {
+          id: doc.id,
+          ...d,
+          receiptNo: d.receiptNo || d['Receipt No'] || `SRS-2026-${String(doc.id).slice(-6)}`,
+          donorName: d.donorName || d['Donor Name'] || d.name || 'Devotee',
+          amount: parseFloat(d.amount || d.Amount) || 0,
+          paymentMethod: d.paymentMethod || d['Payment Method'] || 'UPI',
+          date: d.date || d.Date || new Date().toLocaleDateString('en-GB')
+        };
+      }).sort((a, b) => {
+        const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
+        const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0;
+        return timeB - timeA;
+      });
+
       if (liveData.length > 0) {
         setDonations(liveData);
+        localStorage.setItem('srs_donations', JSON.stringify(liveData));
       }
     }, (error) => {
       console.warn("Firestore live donations listener note:", error.message);
@@ -434,15 +454,16 @@ export const AppProvider = ({ children }) => {
 
   // FIRESTORE REAL-TIME LISTENER FOR EXPENSES
   useEffect(() => {
-    const q = query(collection(db, "expenses"), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "expenses"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const liveData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        amount: parseFloat(doc.data().amount) || 0
+        amount: parseFloat(doc.data().amount || doc.data().Amount) || 0
       }));
       if (liveData.length > 0) {
         setExpenses(liveData);
+        localStorage.setItem('srs_expenses', JSON.stringify(liveData));
       }
     }, (error) => {
       console.warn("Firestore live expenses listener note:", error.message);
