@@ -75,11 +75,6 @@ export const LoginPage = ({ onLoginSuccess }) => {
     setError('');
     setMessage('');
 
-    if (lockoutTimer > 0) {
-      setError(`🚨 Account Temporarily Locked due to 5 failed attempts. Please wait ${Math.ceil(lockoutTimer / 60)} minutes.`);
-      return;
-    }
-
     const cleanInput = loginIdentifier.trim().toLowerCase();
 
     if (!cleanInput) {
@@ -92,7 +87,60 @@ export const LoginPage = ({ onLoginSuccess }) => {
       return;
     }
 
+    // 0. Server-side Lockout Check via /api/login-check
+    try {
+      const lockRes = await fetch('/api/login-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'check_lock', email: cleanInput })
+      });
+      const lockData = await lockRes.json();
+      if (lockData.locked) {
+        const remaining = lockData.remainingSeconds || 900;
+        setLockoutTimer(remaining);
+        setError(`🚨 Account Locked for ${Math.ceil(remaining / 60)} minutes due to 5 consecutive wrong password attempts.`);
+        return;
+      }
+    } catch (e) {
+      console.warn("Lockout check API note:", e.message);
+    }
+
     let authUser = null;
+
+    // Helper for recording failed attempts
+    const recordFailedAttempt = async (errorMessage) => {
+      try {
+        const failRes = await fetch('/api/login-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'failed_attempt', email: cleanInput })
+        });
+        const failData = await failRes.json();
+        const nextFail = failData.failedAttempts || (failedAttempts + 1);
+        setFailedAttempts(nextFail);
+
+        if (failData.locked || nextFail >= 5) {
+          const remaining = failData.remainingSeconds || 900;
+          setLockoutTimer(remaining);
+          setError(`🚨 Account Locked for 15 minutes due to 5 consecutive wrong password attempts.`);
+          return;
+        }
+      } catch (e) {
+        console.warn("Failed attempt record note:", e.message);
+      }
+      setError(errorMessage);
+    };
+
+    // Helper for recording success
+    const recordSuccess = () => {
+      try {
+        fetch('/api/login-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'success', email: cleanInput })
+        }).catch(e => console.warn("Reset lock note:", e.message));
+      } catch (e) {}
+    };
 
     // 1. Strict Firebase Authentication for Email Sign-In
     if (cleanInput.includes('@')) {
@@ -101,14 +149,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
         authUser = userCredential.user;
       } catch (firebaseErr) {
         console.warn("Firebase Auth Notice:", firebaseErr.message);
-        const nextFail = failedAttempts + 1;
-        setFailedAttempts(nextFail);
-        if (nextFail >= 5) {
-          setLockoutTimer(900); // 15 minutes lockout
-          setError("🚨 Account Locked for 15 minutes due to 5 consecutive wrong password attempts.");
-          return;
-        }
-        setError("🚨 Invalid Credentials: Email or password is incorrect. Only registered accounts in Firebase can access the portal.");
+        await recordFailedAttempt("🚨 Invalid Credentials: Email or password is incorrect. Only registered accounts in Firebase can access the portal.");
         return; // STOP EXECUTION IMMEDIATELY! NO FALLBACK LOGIN!
       }
     }
@@ -130,9 +171,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
         if (!cleanInput.includes('@')) {
           const docPassword = foundFirestore.Password || foundFirestore.password;
           if (docPassword && docPassword !== loginPassword) {
-            const nextFail = failedAttempts + 1;
-            setFailedAttempts(nextFail);
-            setError("🚨 Invalid Credentials: Incorrect mobile number or password.");
+            await recordFailedAttempt("🚨 Invalid Credentials: Incorrect mobile number or password.");
             return; // STOP EXECUTION!
           }
         }
@@ -154,6 +193,8 @@ export const LoginPage = ({ onLoginSuccess }) => {
           setError("🚫 Account Disabled: Your account has been disabled by the Super Admin.");
           return;
         }
+
+        recordSuccess();
 
         const fullName = foundFirestore['Full name'] || foundFirestore.fullName || foundFirestore.name || cleanInput.split('@')[0];
         const assignedRole = isSuperAdmin ? 'Super Admin' : (lowerRole.includes('collector') ? 'Collector' : 'Viewer');
@@ -188,6 +229,8 @@ export const LoginPage = ({ onLoginSuccess }) => {
         return;
       }
 
+      recordSuccess();
+
       const assignedRole = normalizeRole(foundLocal.role, cleanInput);
       const userObj = { ...foundLocal, role: assignedRole };
       setRole(assignedRole);
@@ -201,6 +244,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
 
     // If Firebase Auth succeeded (valid email/password in Firebase Auth but missing from Firestore `users`)
     if (authUser) {
+      recordSuccess();
       const isSuperAdmin = cleanInput.includes('admin') || cleanInput.includes('speed') || cleanInput.includes('karthik');
       const assignedRole = isSuperAdmin ? 'Super Admin' : 'Viewer';
       const fullName = isSuperAdmin ? 'Gurram Karthikeya' : authUser.displayName || cleanInput.split('@')[0];
@@ -222,14 +266,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
     }
 
     // STRICT REJECTION FOR ANY UNREGISTERED / FAKE CREDENTIALS!
-    const nextFail = failedAttempts + 1;
-    setFailedAttempts(nextFail);
-    if (nextFail >= 5) {
-      setLockoutTimer(900);
-      setError("🚨 Account Locked for 15 minutes due to 5 consecutive wrong password attempts.");
-      return;
-    }
-    setError("🚨 Invalid Credentials: Incorrect email/mobile or password. Only registered accounts can access SREE RAM SENA Divine Manager.");
+    await recordFailedAttempt("🚨 Invalid Credentials: Incorrect email/mobile or password. Only registered accounts can access SREE RAM SENA Divine Manager.");
   };
 
   const handlePasswordReset = async () => {

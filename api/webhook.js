@@ -10,7 +10,11 @@ export default async function handler(req, res) {
     const token = parsedUrl.searchParams.get('hub.verify_token') || (req.query && req.query['hub.verify_token']);
     const challenge = parsedUrl.searchParams.get('hub.challenge') || (req.query && req.query['hub.challenge']);
 
-    const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || 'sreeramsena2026secret';
+    const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN;
+    if (!VERIFY_TOKEN) {
+      console.warn("⚠️ META_VERIFY_TOKEN environment variable not set!");
+      return res.status(500).json({ error: "Webhook not configured" });
+    }
 
     // 1. GET Method — Webhook Verification by Meta Dashboard
     if (req.method === 'GET') {
