@@ -441,10 +441,8 @@ export const AppProvider = ({ children }) => {
         return timeB - timeA;
       });
 
-      if (liveData.length > 0) {
-        setDonations(liveData);
-        localStorage.setItem('srs_donations', JSON.stringify(liveData));
-      }
+      setDonations(liveData);
+      localStorage.setItem('srs_donations', JSON.stringify(liveData));
     }, (error) => {
       console.warn("Firestore live donations listener note:", error.message);
     });
