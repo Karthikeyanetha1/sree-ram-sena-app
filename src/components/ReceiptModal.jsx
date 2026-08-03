@@ -279,6 +279,18 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
                 </div>
               </div>
 
+              {/* COLLECTOR ENTRY BLOCK */}
+              <div className="grid grid-cols-12 items-baseline py-1 border-b border-slate-100">
+                <div className="col-span-4 text-slate-500 font-bold flex items-center space-x-1.5">
+                  <User className="w-3.5 h-3.5 text-amber-600" />
+                  <span>COLLECTOR</span>
+                </div>
+                <div className="col-span-1 text-center font-bold text-slate-400">:</div>
+                <div className="col-span-7 font-extrabold text-amber-900 bg-amber-50/80 px-2 py-0.5 rounded-md border border-amber-200/60 inline-block">
+                  {donation.collector || donation.Collector || 'karthiknetha'}
+                </div>
+              </div>
+
               <div className="grid grid-cols-12 items-baseline py-1">
                 <div className="col-span-4 text-slate-500 font-bold flex items-center space-x-1.5">
                   <User className="w-3.5 h-3.5 text-emerald-700" />
