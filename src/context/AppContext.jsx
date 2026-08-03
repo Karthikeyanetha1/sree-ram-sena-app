@@ -215,25 +215,27 @@ export const AppProvider = ({ children }) => {
 
   const approveUser = async (userId) => {
     const target = registeredUsers.find(u => u.id === userId);
-    const updated = registeredUsers.map(u => u.id === userId ? { ...u, status: 'Approved' } : u);
-    setRegisteredUsers(updated);
-    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
 
     // Update Firestore if email matches
     if (target && target.email) {
       try {
         const q = query(collection(db, "users"));
         const snapshot = await getDocs(q);
-        snapshot.docs.forEach(async (docSnap) => {
+        for (const docSnap of snapshot.docs) {
           const d = docSnap.data();
           if ((d.Email && d.Email.toLowerCase() === target.email.toLowerCase()) || (d.email && d.email.toLowerCase() === target.email.toLowerCase())) {
             await updateDoc(doc(db, "users", docSnap.id), { Approved: true, status: 'Approved' });
           }
-        });
+        }
       } catch (err) {
         console.warn("Firestore approval update error:", err.message);
+        throw new Error(`Failed to approve user in Firestore: ${err.message}`);
       }
     }
+
+    const updated = registeredUsers.map(u => u.id === userId ? { ...u, status: 'Approved' } : u);
+    setRegisteredUsers(updated);
+    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
 
     logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', 'Approved User Account', { userId, email: target?.email });
   };
