@@ -148,19 +148,15 @@ export const AppProvider = ({ children }) => {
     localStorage.removeItem('srs_current_user');
     setRoleState('Viewer');
 
-    // Save to Firestore with approved: false & status: 'Pending Approval'
+    // Save to Firestore via /api/register-user serverless function
     try {
-      await addDoc(collection(db, "users"), {
-        "Full name": name,
-        "Email": email.toLowerCase(),
-        "Role": safeRole,
-        "Approved": false,
-        "Active": true,
-        "status": "Pending Approval",
-        "createdAt": serverTimestamp()
+      await fetch('/api/register-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, role: safeRole })
       });
     } catch (e) {
-      console.warn("Firestore user document creation note:", e.message);
+      console.warn("Serverless user registration note:", e.message);
     }
 
     const newUser = {
