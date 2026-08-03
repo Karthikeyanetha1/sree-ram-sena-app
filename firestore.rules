@@ -18,7 +18,11 @@ service cloud.firestore {
     }
 
     function isApprovedUser() {
-      return isSignedIn() && userDoc().Approved == true;
+      return isSignedIn() && (
+        ('Approved' in userDoc() && userDoc().Approved == true) ||
+        ('approved' in userDoc() && userDoc().approved == true) ||
+        ('status' in userDoc() && userDoc().status == 'Approved')
+      );
     }
 
     function userRole() {
@@ -27,7 +31,7 @@ service cloud.firestore {
 
     function isSuperAdmin() {
       return isApprovedUser() &&
-        (userRole() == 'Super Admin' || userRole().lower() == 'superadmin');
+        (userRole() == 'Super Admin' || userRole().lower() == 'superadmin' || userRole().lower() == 'admin');
     }
 
     function isCollectorOrAdmin() {
@@ -48,13 +52,14 @@ service cloud.firestore {
 
       allow create: if isSignedIn()
         && request.auth.uid == uid
-        && request.resource.data.Approved == false
-        && request.resource.data.role in ['Collector', 'Viewer'];
+        && (
+          ('Approved' in request.resource.data && request.resource.data.Approved == false) ||
+          ('approved' in request.resource.data && request.resource.data.approved == false) ||
+          ('status' in request.resource.data && request.resource.data.status == 'Pending Approval')
+        );
 
       allow update: if isSuperAdmin()
-        || (isSignedIn() && request.auth.uid == uid
-            && request.resource.data.Approved == resource.data.Approved
-            && request.resource.data.role == resource.data.role);
+        || (isSignedIn() && request.auth.uid == uid);
 
       allow delete: if isSuperAdmin();
     }
