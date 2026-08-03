@@ -1,0 +1,93 @@
+rules_version = '2';
+
+/* =========================================================
+   SREE RAM SENA — Cloud Firestore Security Rules (HARDENED)
+   Project: donation-book-91111
+   ========================================================= */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helper Functions ----------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isApprovedUser() {
+      return isSignedIn() && userDoc().Approved == true;
+    }
+
+    function userRole() {
+      return userDoc().role;
+    }
+
+    function isSuperAdmin() {
+      return isApprovedUser() &&
+        (userRole() == 'Super Admin' || userRole().lower() == 'superadmin');
+    }
+
+    function isCollectorOrAdmin() {
+      return isApprovedUser() &&
+        (userRole().lower() == 'collector' || isSuperAdmin());
+    }
+
+    // ---------- First-run Bootstrap Flag ----------
+    match /meta/setup {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // ---------- Registered Users & Approvals ----------
+    match /users/{uid} {
+      allow get: if isSignedIn() && (request.auth.uid == uid || isSuperAdmin());
+      allow list: if isSuperAdmin();
+
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.Approved == false
+        && request.resource.data.role in ['Collector', 'Viewer'];
+
+      allow update: if isSuperAdmin()
+        || (isSignedIn() && request.auth.uid == uid
+            && request.resource.data.Approved == resource.data.Approved
+            && request.resource.data.role == resource.data.role);
+
+      allow delete: if isSuperAdmin();
+    }
+
+    // ---------- Donations ----------
+    match /donations/{donationId} {
+      allow get: if true;
+      allow list: if isCollectorOrAdmin();
+      allow create: if isCollectorOrAdmin();
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // ---------- Expenses ----------
+    match /expenses/{expenseId} {
+      allow read: if isCollectorOrAdmin();
+      allow create: if isCollectorOrAdmin();
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // ---------- Inventory, Sponsors, Events & Settings ----------
+    match /inventory/{itemId}   { allow read: if isCollectorOrAdmin(); allow write: if isSuperAdmin(); }
+    match /sponsors/{sponsorId} { allow read: if true; allow write: if isSuperAdmin(); }
+    match /events/{eventId}     { allow read: if true; allow write: if isSuperAdmin(); }
+    match /settings/{docId}     { allow read: if isCollectorOrAdmin(); allow write: if isSuperAdmin(); }
+
+    // ---------- Audit / Logs / Notifications ----------
+    match /activityLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow write: if isSignedIn();
+    }
+    match /notifications/{notifId} {
+      allow read: if isApprovedUser();
+      allow write: if isSuperAdmin();
+    }
+  }
+}

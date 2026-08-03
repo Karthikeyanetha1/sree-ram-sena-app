@@ -62,12 +62,14 @@ const MainAppContent = () => {
       if (found) {
         setPublicReceiptDonation(found);
       } else {
-        getDocs(query(collection(db, "donations"), where("receiptNo", "==", targetNo)))
-          .then(snapshot => {
-            if (!snapshot.empty) {
-              setPublicReceiptDonation({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
+        fetch(`/api/get-receipt?receiptNo=${encodeURIComponent(targetNo)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.donation) {
+              setPublicReceiptDonation(data.donation);
             }
-          }).catch(e => console.warn("Public receipt load note:", e));
+          })
+          .catch(e => console.warn("Public receipt API load note:", e));
       }
     }
   }, [donations]);

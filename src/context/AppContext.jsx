@@ -135,10 +135,18 @@ export const AppProvider = ({ children }) => {
     try {
       if (email && email.includes('@')) {
         await createUserWithEmailAndPassword(auth, email, password || 'sreeram2026');
+        // Crucial Security Fix: Immediately sign out so new signups require Super Admin approval before logging in
+        await firebaseSignOut(auth);
       }
     } catch (err) {
       console.warn("Firebase Auth Register Note:", err.message);
     }
+
+    // Ensure client auth state is NOT logged in for unapproved new users
+    setIsAuthenticatedState(false);
+    localStorage.setItem('srs_authenticated', 'false');
+    localStorage.removeItem('srs_current_user');
+    setRoleState('Viewer');
 
     // Save to Firestore with approved: false & status: 'Pending Approval'
     try {
