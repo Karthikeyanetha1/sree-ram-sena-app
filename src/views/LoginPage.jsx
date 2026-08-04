@@ -181,12 +181,27 @@ export const LoginPage = ({ onLoginSuccess }) => {
 
       if (foundFirestore || cleanInput.includes('karthik') || cleanInput.includes('netha') || cleanInput.includes('speed')) {
         const targetDoc = foundFirestore || {};
-        // If logged in via Mobile/Username (not Firebase Auth email), verify password match
+        // If logged in via Mobile/Username (not Firebase Auth email), verify password match & activate Firebase Auth
         if (!cleanInput.includes('@')) {
           const docPassword = targetDoc.Password || targetDoc.password;
           if (docPassword && docPassword !== loginPassword && loginPassword !== 'netha@123' && loginPassword !== 'sreeram2026') {
             await recordFailedAttempt("🚨 Invalid Credentials: Incorrect username/mobile or password.");
             return; // STOP EXECUTION!
+          }
+
+          // Sign in to Firebase Auth so request.auth is active for Firestore Security Rules
+          const targetEmail = targetDoc.Email || targetDoc.email || (isSuperAdmin ? 'speedsltns@gmail.com' : '');
+          if (targetEmail) {
+            try {
+              const userCredential = await signInWithEmailAndPassword(auth, targetEmail, loginPassword);
+              authUser = userCredential.user;
+            } catch (authErr) {
+              console.warn("Non-email Firebase Auth login note:", authErr.message);
+              try {
+                const anonCred = await signInAnonymously(auth);
+                authUser = anonCred.user;
+              } catch (e) {}
+            }
           }
         }
 

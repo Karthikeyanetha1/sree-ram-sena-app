@@ -420,7 +420,7 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
-  // FIRESTORE REAL-TIME LISTENER FOR DONATIONS (Without restrictive orderBy to prevent dropping docs)
+  // FIRESTORE REAL-TIME LISTENER FOR DONATIONS (Preserves cached data)
   useEffect(() => {
     const q = query(collection(db, "donations"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -441,8 +441,10 @@ export const AppProvider = ({ children }) => {
         return timeB - timeA;
       });
 
-      setDonations(liveData);
-      localStorage.setItem('srs_donations', JSON.stringify(liveData));
+      if (liveData.length > 0) {
+        setDonations(liveData);
+        localStorage.setItem('srs_donations', JSON.stringify(liveData));
+      }
     }, (error) => {
       console.warn("Firestore live donations listener note:", error.message);
     });
@@ -450,7 +452,7 @@ export const AppProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // FIRESTORE REAL-TIME LISTENER FOR EXPENSES
+  // FIRESTORE REAL-TIME LISTENER FOR EXPENSES (Preserves cached data)
   useEffect(() => {
     const q = query(collection(db, "expenses"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -459,8 +461,11 @@ export const AppProvider = ({ children }) => {
         ...doc.data(),
         amount: parseFloat(doc.data().amount || doc.data().Amount) || 0
       }));
-      setExpenses(liveData);
-      localStorage.setItem('srs_expenses', JSON.stringify(liveData));
+
+      if (liveData.length > 0) {
+        setExpenses(liveData);
+        localStorage.setItem('srs_expenses', JSON.stringify(liveData));
+      }
     }, (error) => {
       console.warn("Firestore live expenses listener note:", error.message);
     });
