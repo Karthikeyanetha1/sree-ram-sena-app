@@ -42,9 +42,9 @@ export const initialCommitteeInfo = {
 export const AppProvider = ({ children }) => {
   const [lang, setLang] = useState('en');
   
-  // Auth Loading Pipeline State
-  const [isAuthInitializing, setIsAuthInitializing] = useState(true);
-  const [authStatusText, setAuthStatusText] = useState('Initializing SREE RAM SENA Auth...');
+  // Auth Loading Pipeline State - Set false by default so UI loads INSTANTLY without blocking delay
+  const [isAuthInitializing, setIsAuthInitializing] = useState(false);
+  const [authStatusText, setAuthStatusText] = useState('');
 
   // Enterprise Strict Authentication State - Requires valid currentUser & role
   const [isAuthenticated, setIsAuthenticatedState] = useState(() => {
