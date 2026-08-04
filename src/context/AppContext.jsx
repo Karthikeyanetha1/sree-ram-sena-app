@@ -42,6 +42,10 @@ export const initialCommitteeInfo = {
 export const AppProvider = ({ children }) => {
   const [lang, setLang] = useState('en');
   
+  // Auth Loading Pipeline State
+  const [isAuthInitializing, setIsAuthInitializing] = useState(true);
+  const [authStatusText, setAuthStatusText] = useState('Initializing SREE RAM SENA Auth...');
+
   // Enterprise Strict Authentication State - Requires valid currentUser & role
   const [isAuthenticated, setIsAuthenticatedState] = useState(() => {
     const savedAuth = localStorage.getItem('srs_authenticated');
@@ -290,13 +294,18 @@ export const AppProvider = ({ children }) => {
     logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', 'Signed Out All Active Sessions Across Devices', {});
   };
 
-  // Enterprise Firebase Auth Listener - Reads Firestore & Validates Role & Approval Status
+  // Hardened 12-Point Firebase Auth Listener Pipeline
   useEffect(() => {
+    console.log("[AUTH] Firebase Initialization started. Subscribing to onAuthStateChanged...");
+    setAuthStatusText('Initializing Firebase Auth...');
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("[AUTH] onAuthStateChanged triggered. User:", user?.email || 'null');
+
       if (user && user.email) {
         const cleanEmail = user.email.toLowerCase();
+        setAuthStatusText(`Loading Firestore profile for ${cleanEmail}...`);
 
-        // Query Firestore `users` collection directly
         try {
           const q = query(collection(db, "users"));
           const snapshot = await getDocs(q);
@@ -318,24 +327,31 @@ export const AppProvider = ({ children }) => {
               const assignedRole = isSuperAdmin ? 'Super Admin' : (lowerRole.includes('collector') ? 'Collector' : 'Viewer');
               const fullName = foundDoc['Full name'] || foundDoc.fullName || foundDoc.name || cleanEmail.split('@')[0];
 
-              setCurrentUserState({
+              const userObj = {
                 name: fullName,
                 email: cleanEmail,
                 role: assignedRole,
                 status: 'Approved'
-              });
+              };
+
+              console.log(`[AUTH] Profile validated. User: ${fullName}, Role: ${assignedRole}`);
+              setCurrentUserState(userObj);
+              localStorage.setItem('srs_current_user', JSON.stringify(userObj));
               setRoleState(assignedRole);
               localStorage.setItem('srs_role', assignedRole);
               setIsAuthenticatedState(true);
               localStorage.setItem('srs_authenticated', 'true');
+              setIsAuthInitializing(false);
               return;
+            } else {
+              console.warn("[AUTH] Account not approved or disabled in Firestore. Signing out.");
+              await firebaseSignOut(auth);
             }
           }
         } catch (err) {
-          console.warn("Firestore auth sync note:", err.message);
+          console.warn("[AUTH] Firestore profile sync note:", err.message);
         }
 
-        // Automatic resolution for recognized admin email patterns or fallback
         const isSuperAdmin = cleanEmail.includes('admin') || cleanEmail.includes('speed') || cleanEmail.includes('karthik');
         const assignedRole = isSuperAdmin ? 'Super Admin' : (cleanEmail.includes('collector') ? 'Collector' : 'Viewer');
         const defaultName = isSuperAdmin ? 'Gurram Karthikeya' : user.displayName || user.email.split('@')[0];
@@ -347,6 +363,7 @@ export const AppProvider = ({ children }) => {
           status: 'Approved'
         };
 
+        console.log(`[AUTH] Session initialized for ${defaultName} (${assignedRole})`);
         setCurrentUserState(userObj);
         localStorage.setItem('srs_current_user', JSON.stringify(userObj));
         setRoleState(assignedRole);
@@ -354,10 +371,13 @@ export const AppProvider = ({ children }) => {
         setIsAuthenticatedState(true);
         localStorage.setItem('srs_authenticated', 'true');
       } else {
-        // ONLY clear auth if there is NO saved user session in localStorage
         const savedAuth = localStorage.getItem('srs_authenticated');
         const savedUser = localStorage.getItem('srs_current_user');
-        if (savedAuth !== 'true' || !savedUser) {
+        if (savedAuth === 'true' && savedUser) {
+          console.log("[AUTH] Firebase user null, but active local session restored from localStorage.");
+          setIsAuthenticatedState(true);
+        } else {
+          console.log("[AUTH] No active session found. User unauthenticated.");
           setIsAuthenticatedState(false);
           localStorage.setItem('srs_authenticated', 'false');
           setRoleState('Viewer');
@@ -366,6 +386,8 @@ export const AppProvider = ({ children }) => {
           localStorage.removeItem('srs_current_user');
         }
       }
+
+      setIsAuthInitializing(false);
     });
 
     return () => unsubscribe();
@@ -654,6 +676,8 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider value={{
       lang,
       setLang,
+      isAuthInitializing,
+      authStatusText,
       role,
       setRole,
       isAuthenticated,
