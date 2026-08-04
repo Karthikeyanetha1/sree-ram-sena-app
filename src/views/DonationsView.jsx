@@ -562,6 +562,20 @@ export const DonationsView = ({ onViewReceipt, openAddModal, setOpenAddModal, on
                 </div>
               </div>
 
+              <div>
+                <label className="text-slate-700 font-bold block mb-1">Collector / Receipt Officer</label>
+                <div className="relative">
+                  <User className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-amber-600" />
+                  <input
+                    type="text"
+                    value={formData.collector || (currentUser?.name || 'karthiknetha')}
+                    onChange={(e) => setFormData({ ...formData, collector: e.target.value })}
+                    placeholder="e.g. karthiknetha"
+                    className="w-full pl-8 pr-3 py-2 bg-amber-50/60 border border-amber-300 rounded-xl font-bold text-amber-950 outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 font-bold block mb-1">Village / Area</label>

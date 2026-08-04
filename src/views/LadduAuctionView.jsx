@@ -72,26 +72,26 @@ export const LadduAuctionView = ({ onViewReceipt }) => {
   return (
     <div className="space-y-6 pb-12 animate-in fade-in">
       
-      {/* 2025 PREVIOUS YEAR LADDU WINNER ANNOUNCEMENT HEADER */}
+      {/* 2026 VINAYAKA LADDU WINNER ANNOUNCEMENT HEADER */}
       <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white rounded-3xl p-4 sm:p-5 shadow-lg border border-amber-300 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
             🏆
           </div>
           <div>
             <div className="text-[11px] font-black uppercase tracking-widest text-amber-100 flex items-center space-x-1">
-              <span>🌟 2025 Vinayaka Laddu Prasadam Winner</span>
+              <span>🌟 2026 Vinayaka Laddu Prasadam Winner</span>
             </div>
             <h2 className="text-lg sm:text-xl font-black tracking-tight text-white font-serif">
-              Neeli Prathap – <span className="text-yellow-200">₹51,116/-</span>
+              {highestBid.amount > 0 ? highestBid.bidderName : 'Neeli Prathap'} – <span className="text-yellow-200">₹{(highestBid.amount || 51116).toLocaleString('en-IN')}/-</span>
             </h2>
             <p className="text-xs text-amber-100 font-medium">
-              Winning Bidder for Vinayaka Maha Laddu Prasadam (Govindhupalli - 2025)
+              Winning Bidder for Vinayaka Maha Laddu Prasadam (Govindhupalli - 2026)
             </p>
           </div>
         </div>
         <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl text-center border border-white/30 text-xs font-black text-white shrink-0">
-          📣 2026 Live Auction Below
+          📣 2026 Live Auction Active
         </div>
       </div>
 

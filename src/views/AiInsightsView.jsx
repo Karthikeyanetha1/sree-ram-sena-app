@@ -13,6 +13,18 @@ import {
 export const AiInsightsView = () => {
   const { t, donations, expenses } = useApp();
 
+  // Dynamic calculations from live donations data
+  const topDonor = (donations || []).reduce((max, d) => (parseFloat(d.amount) > parseFloat(max.amount || 0) ? d : max), {});
+
+  const collectorTotals = (donations || []).reduce((acc, d) => {
+    const colName = d.collector || d.Collector || 'karthiknetha';
+    acc[colName] = (acc[colName] || 0) + (parseFloat(d.amount) || 0);
+    return acc;
+  }, {});
+
+  const topCollectorName = Object.keys(collectorTotals).reduce((max, col) => (collectorTotals[col] > (collectorTotals[max] || 0) ? col : max), 'karthiknetha');
+  const topCollectorAmount = collectorTotals[topCollectorName] || 0;
+
   return (
     <div className="space-y-6 pb-12">
       
@@ -80,8 +92,8 @@ export const AiInsightsView = () => {
             <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider block">
               Top Benefactor Spotlight
             </span>
-            <h4 className="text-lg font-black text-slate-900">Venkateshwara Rao</h4>
-            <p className="text-xs font-bold text-emerald-700">₹10,001 • Annadhanam Sponsorship</p>
+            <h4 className="text-lg font-black text-slate-900">{topDonor.donorName || 'Devotee'}</h4>
+            <p className="text-xs font-bold text-emerald-700">₹{(topDonor.amount || 0).toLocaleString('en-IN')} • {topDonor.category || 'General Donation'}</p>
           </div>
         </div>
 
@@ -94,8 +106,8 @@ export const AiInsightsView = () => {
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
               Top Collector Officer
             </span>
-            <h4 className="text-lg font-black text-slate-900">Karthik Sharma</h4>
-            <p className="text-xs font-bold text-slate-600">Collected ₹22,500 across 4 Receipts</p>
+            <h4 className="text-lg font-black text-slate-900">{topCollectorName}</h4>
+            <p className="text-xs font-bold text-slate-600">Collected ₹{topCollectorAmount.toLocaleString('en-IN')}</p>
           </div>
         </div>
 

@@ -262,57 +262,77 @@ export const Navbar = ({
               <span className="text-[11px] font-bold">{lang === 'en' ? 'TE' : 'EN'}</span>
             </button>
 
-            {/* Notifications Dropdown */}
+            {/* Notifications & Pending Approvals Dropdown */}
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="p-1.5 rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition relative"
                 aria-label="Notifications"
               >
-                <Bell className="w-5 h-5" />
-                {notifications.length > 0 && (
+                <Bell className="w-5 h-5 text-slate-700" />
+                {(registeredUsers || []).filter(u => u.status === 'Pending Approval').length > 0 ? (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center animate-bounce ring-2 ring-white">
+                    {(registeredUsers || []).filter(u => u.status === 'Pending Approval').length}
+                  </span>
+                ) : notifications.length > 0 && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-600 rounded-full ring-2 ring-white" />
                 )}
               </button>
 
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-xl border border-slate-200/80 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200/80 py-2 z-50 animate-in fade-in slide-in-from-top-2">
                   <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
                     <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">System Notification Center</h4>
-                    <span className="text-[10px] bg-indigo-100 text-indigo-950 font-black px-2 py-0.5 rounded-full">
-                      5 Events
-                    </span>
+                    {(registeredUsers || []).filter(u => u.status === 'Pending Approval').length > 0 && (
+                      <span className="text-[10px] bg-red-100 text-red-700 font-black px-2 py-0.5 rounded-full border border-red-200 animate-pulse">
+                        ⏳ {(registeredUsers || []).filter(u => u.status === 'Pending Approval').length} Pending Approvals
+                      </span>
+                    )}
                   </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 text-xs font-semibold">
+
+                  {/* PENDING SIGN-UP APPROVAL REQUESTS SECTION */}
+                  {role === 'Super Admin' && (registeredUsers || []).filter(u => u.status === 'Pending Approval').length > 0 && (
+                    <div className="p-3 bg-amber-50/80 border-b border-amber-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase text-amber-900 flex items-center gap-1">
+                          <span>🔔 New Sign-Up Approval Requests</span>
+                        </span>
+                        <button 
+                          onClick={() => { setShowNotifications(false); onOpenAdminUsers(); }}
+                          className="text-[9px] font-extrabold text-amber-800 underline cursor-pointer"
+                        >
+                          View Roster Modal
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                        {(registeredUsers || []).filter(u => u.status === 'Pending Approval').map(u => (
+                          <div key={u.id} className="bg-white p-2 rounded-xl border border-amber-200 flex items-center justify-between text-xs">
+                            <div>
+                              <div className="font-extrabold text-slate-900">{u.name} <span className="text-[10px] text-amber-700 font-bold">({u.role})</span></div>
+                              <div className="text-[10px] text-slate-500">{u.email || u.mobile}</div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                approveUser(u.id);
+                                setShowNotifications(false);
+                              }}
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black text-[10px] shadow-xs cursor-pointer"
+                            >
+                              Approve ✓
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 text-xs font-semibold">
                     <div className="p-3 bg-emerald-50/50 flex items-center space-x-2">
                       <span className="text-emerald-700 font-extrabold text-sm">✓</span>
                       <div>
-                        <div className="font-extrabold text-emerald-950">328 WhatsApp Receipts Delivered</div>
-                        <span className="text-[10px] text-emerald-800">2 mins ago • Meta Cloud API</span>
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-amber-50/50 flex items-center space-x-2">
-                      <span className="text-amber-700 font-extrabold text-sm">⚠️</span>
-                      <div>
-                        <div className="font-extrabold text-amber-950">2 Failed Deliveries</div>
-                        <span className="text-[10px] text-amber-800">Click Receipts to Retry</span>
-                      </div>
-                    </div>
-
-                    <div className="p-3 flex items-center space-x-2">
-                      <span className="text-indigo-600 font-extrabold text-sm">✓</span>
-                      <div>
-                        <div className="font-extrabold text-slate-900">Backup Completed</div>
-                        <span className="text-[10px] text-slate-500">Auto-saved to localStorage</span>
-                      </div>
-                    </div>
-
-                    <div className="p-3 flex items-center space-x-2">
-                      <span className="text-indigo-600 font-extrabold text-sm">✓</span>
-                      <div>
-                        <div className="font-extrabold text-slate-900">Firebase Cloud Synced</div>
-                        <span className="text-[10px] text-slate-500">Real-time Firestore active</span>
+                        <div className="font-extrabold text-emerald-950">System Online & Hardened</div>
+                        <span className="text-[10px] text-emerald-800">SREE RAM SENA 2026 Active</span>
                       </div>
                     </div>
 

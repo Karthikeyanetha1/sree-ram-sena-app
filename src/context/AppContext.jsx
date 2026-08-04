@@ -468,6 +468,64 @@ export const AppProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  // FIRESTORE REAL-TIME LISTENER FOR REGISTERED USERS & PENDING APPROVALS
+  useEffect(() => {
+    const q = query(collection(db, "users"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const liveUsers = snapshot.docs.map(doc => {
+        const d = doc.data();
+        return {
+          id: doc.id,
+          name: d['Full name'] || d.fullName || d.name || 'User',
+          email: d.Email || d.email || '',
+          mobile: d.Mobile || d.mobile || '',
+          role: d.Role || d.role || 'Viewer',
+          status: (d.Approved === true || d.approved === true || d.status === 'Approved') ? 'Approved' : 'Pending Approval',
+          createdAt: d.createdAt?.seconds ? new Date(d.createdAt.seconds * 1000).toLocaleDateString('en-IN') : 'Recent'
+        };
+      });
+      if (liveUsers.length > 0) {
+        setRegisteredUsers(liveUsers);
+        localStorage.setItem('srs_registered_users', JSON.stringify(liveUsers));
+      }
+    }, (error) => {
+      console.warn("Firestore live users listener note:", error.message);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // FIRESTORE REAL-TIME LISTENER FOR LADDU BIDS
+  useEffect(() => {
+    const q = query(collection(db, "ladduBids"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const liveBids = snapshot.docs.map(doc => {
+        const d = doc.data();
+        return {
+          id: doc.id,
+          bidderName: d.bidderName || d.name || 'Bidder',
+          mobile: d.mobile || 'N/A',
+          amount: parseFloat(d.amount) || 0,
+          time: d.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: d.status || 'Bidder'
+        };
+      }).sort((a, b) => b.amount - a.amount);
+
+      if (liveBids.length > 0) {
+        liveBids[0].status = 'Leading Bidder 🏆';
+        for (let i = 1; i < liveBids.length; i++) {
+          if (liveBids[i].status === 'Leading Bidder 🏆') liveBids[i].status = 'Outbid';
+        }
+        setLadduBids(liveBids);
+        localStorage.setItem('srs_laddu_bids', JSON.stringify(liveBids));
+      }
+    }, (error) => {
+      console.warn("Firestore live laddu bids listener note:", error.message);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const addDonation = (donationData) => {
     const formattedAmount = parseFloat(donationData.amount) || 0;
     const count = donations.length + 1;
@@ -541,6 +599,31 @@ export const AppProvider = ({ children }) => {
     return newExpenseObj;
   };
 
+  const addLadduBid = (bidData) => {
+    const formattedAmount = parseFloat(bidData.amount) || 0;
+    const newBidObj = {
+      bidderName: bidData.bidderName || "Bidder",
+      mobile: bidData.mobile || "N/A",
+      amount: formattedAmount,
+      time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      status: "Leading Bidder 🏆",
+      createdAt: serverTimestamp()
+    };
+
+    if (navigator.onLine) {
+      addDoc(collection(db, "ladduBids"), newBidObj).catch(err => console.warn("Firestore add bid error:", err));
+    }
+
+    setLadduBids(prev => {
+      const updated = [newBidObj, ...prev.map(b => ({ ...b, status: 'Outbid' }))].sort((a, b) => b.amount - a.amount);
+      localStorage.setItem('srs_laddu_bids', JSON.stringify(updated));
+      return updated;
+    });
+
+    logAction(bidData.bidderName, 'Bidder', `Placed Laddu Auction Bid ₹${formattedAmount}`, { mobile: bidData.mobile });
+    return newBidObj;
+  };
+
   const freshSystemReset = () => {
     setDonations([]);
     setExpenses([]);
@@ -579,6 +662,7 @@ export const AppProvider = ({ children }) => {
       donations,
       expenses,
       ladduBids,
+      addLadduBid,
       notifications,
       addDonation,
       addExpense,
