@@ -262,9 +262,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
         setRole(assignedRole);
         setCurrentUser(userObj);
         setMessage(`Logged in successfully as ${fullName} (${assignedRole})`);
-        setTimeout(() => {
-          if (onLoginSuccess) onLoginSuccess();
-        }, 500);
+        if (onLoginSuccess) onLoginSuccess();
         return;
       }
     } catch (err) {
@@ -289,9 +287,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
       setRole(assignedRole);
       setCurrentUser(userObj);
       setMessage(`Logged in successfully as ${foundLocal.name} (${assignedRole})`);
-      setTimeout(() => {
-        if (onLoginSuccess) onLoginSuccess();
-      }, 500);
+      if (onLoginSuccess) onLoginSuccess();
       return;
     }
 
@@ -312,9 +308,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
       setRole(assignedRole);
       setCurrentUser(userObj);
       setMessage(`Logged in successfully as ${fullName} (${assignedRole})`);
-      setTimeout(() => {
-        if (onLoginSuccess) onLoginSuccess();
-      }, 500);
+      if (onLoginSuccess) onLoginSuccess();
       return;
     }
 
