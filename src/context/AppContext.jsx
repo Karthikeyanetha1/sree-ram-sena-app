@@ -553,8 +553,16 @@ export const AppProvider = ({ children }) => {
       createdAt: serverTimestamp()
     };
 
+    // 1. Primary write to Cloud Firestore DB via Serverless Admin SDK
     if (navigator.onLine) {
-      addDoc(collection(db, "donations"), newDonationObj).catch(err => console.warn("Firestore add error:", err));
+      fetch('/api/add-donation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ donation: newDonationObj })
+      }).catch(e => console.warn("Add donation API note:", e.message));
+
+      // 2. Secondary fallback write via Client SDK
+      addDoc(collection(db, "donations"), newDonationObj).catch(err => console.warn("Firestore client add note:", err));
     } else {
       const savedQueue = JSON.parse(localStorage.getItem('sreeramsena_offline_queue') || '[]');
       savedQueue.push(newDonationObj);
