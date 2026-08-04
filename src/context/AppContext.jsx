@@ -354,12 +354,17 @@ export const AppProvider = ({ children }) => {
         setIsAuthenticatedState(true);
         localStorage.setItem('srs_authenticated', 'true');
       } else {
-        setIsAuthenticatedState(false);
-        localStorage.setItem('srs_authenticated', 'false');
-        setRoleState(null);
-        localStorage.removeItem('srs_role');
-        setCurrentUserState(null);
-        localStorage.removeItem('srs_current_user');
+        // ONLY clear auth if there is NO saved user session in localStorage
+        const savedAuth = localStorage.getItem('srs_authenticated');
+        const savedUser = localStorage.getItem('srs_current_user');
+        if (savedAuth !== 'true' || !savedUser) {
+          setIsAuthenticatedState(false);
+          localStorage.setItem('srs_authenticated', 'false');
+          setRoleState('Viewer');
+          localStorage.setItem('srs_role', 'Viewer');
+          setCurrentUserState({ name: 'Public Devotee', email: '', role: 'Viewer', status: 'Approved' });
+          localStorage.removeItem('srs_current_user');
+        }
       }
     });
 
