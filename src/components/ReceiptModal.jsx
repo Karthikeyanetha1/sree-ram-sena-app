@@ -62,6 +62,39 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
     }
   };
 
+  const handleSharePdfDirect = async () => {
+    try {
+      const receiptElem = document.getElementById('receipt-printable-area');
+      if (!receiptElem) return;
+
+      const canvas = await html2canvas(receiptElem, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      const pdfBlob = pdf.output('blob');
+      const pdfFile = new File([pdfBlob], `SRS-Receipt-${donation.receiptNo || '2026'}.pdf`, { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        await navigator.share({
+          title: `SREE RAM SENA Official PDF Receipt ${donation.receiptNo}`,
+          text: `🙏 Official PDF Receipt for ${donation.donorName} (₹${donation.amount})`,
+          files: [pdfFile]
+        });
+        return;
+      }
+
+      pdf.save(`SRS-Receipt-${donation.receiptNo || '2026'}.pdf`);
+      const waLink = generateWhatsAppLink(donation, committeeInfo);
+      window.open(waLink, '_blank');
+    } catch (err) {
+      console.warn("Direct PDF share error:", err);
+      handleDownloadPdf();
+    }
+  };
+
   const handleWhatsApp = async () => {
     const waLink = generateWhatsAppLink(donation, committeeInfo);
 
@@ -76,7 +109,7 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
               if (navigator.canShare({ files: [file] })) {
                 await navigator.share({
                   title: `SREE RAM SENA Official Receipt ${donation.receiptNo}`,
-                  text: `🙏 Official Receipt for ${donation.donorName} - ₹${donation.amount}\n📄 View Online: https://sree-ram-sena-app.vercel.app/?receiptNo=${donation.receiptNo}`,
+                  text: `🙏 Official Receipt for ${donation.donorName} - ₹${donation.amount}`,
                   files: [file]
                 });
                 return;

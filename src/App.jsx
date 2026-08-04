@@ -28,6 +28,8 @@ import { SettingsView } from './views/SettingsView';
 import { LadduAuctionView } from './views/LadduAuctionView';
 import { LeaderboardView } from './views/LeaderboardView';
 
+import { PublicReceiptPage } from './views/PublicReceiptPage';
+
 const MainAppContent = () => {
   const { donations, addDonation, addExpense, role, isAuthenticated, setIsAuthenticatedState } = useApp();
 
@@ -50,70 +52,22 @@ const MainAppContent = () => {
   const [newDonationModalOpen, setNewDonationModalOpen] = useState(false);
   const [newExpenseModalOpen, setNewExpenseModalOpen] = useState(false);
 
-  // Public Receipt Link Listener (e.g. ?receiptNo=SRS-2026-000005)
-  const [publicReceiptDonation, setPublicReceiptDonation] = useState(null);
-  const [isReceiptLoading, setIsReceiptLoading] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return !!(params.get('receiptNo') || params.get('receipt'));
-  });
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const targetNo = params.get('receiptNo') || params.get('receipt');
-
-    if (targetNo) {
-      const found = (donations || []).find(d => d.receiptNo === targetNo);
-      if (found) {
-        setPublicReceiptDonation(found);
-        setIsReceiptLoading(false);
-      } else {
-        fetch(`/api/get-receipt?receiptNo=${encodeURIComponent(targetNo)}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.success && data.donation) {
-              setPublicReceiptDonation(data.donation);
-            }
-          })
-          .catch(e => console.warn("Public receipt API load note:", e))
-          .finally(() => setIsReceiptLoading(false));
-      }
-    } else {
-      setIsReceiptLoading(false);
+  // Extract public receipt number from clean URL path (/receipt/SRS-2026-000001 or /verify/SRS-2026-000001 or ?receiptNo=...)
+  const getReceiptNumberFromUrl = () => {
+    const path = window.location.pathname;
+    const match = path.match(/\/(?:receipt|verify)\/([A-Za-z0-9-]+)/i);
+    if (match && match[1]) {
+      return match[1];
     }
-  }, [donations]);
+    const params = new URLSearchParams(window.location.search);
+    return params.get('receiptNo') || params.get('receipt');
+  };
 
-  if (isReceiptLoading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-white">
-        <div className="w-16 h-16 rounded-full bg-emerald-600/20 border-2 border-emerald-400 flex items-center justify-center animate-pulse mb-4">
-          <span className="text-2xl">🌺</span>
-        </div>
-        <h2 className="text-lg font-bold tracking-wide">Loading Official Digital Receipt...</h2>
-        <p className="text-xs text-slate-400 mt-1">SREE RAM SENA Vinayaka Chavithi 2026</p>
-      </div>
-    );
-  }
+  const publicReceiptNo = getReceiptNumberFromUrl();
 
-  if (publicReceiptDonation) {
-    return (
-      <div className="min-h-screen bg-slate-950 p-2 sm:p-4">
-        <div className="max-w-xl mx-auto flex items-center justify-between py-2 text-white">
-          <span className="text-xs font-bold text-emerald-400">🌺 Official Verified Receipt</span>
-          <button 
-            onClick={() => { setPublicReceiptDonation(null); window.history.replaceState({}, '', '/'); }}
-            className="text-xs font-bold bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1 rounded-lg shadow-xs cursor-pointer"
-          >
-            Portal Log In 🔑
-          </button>
-        </div>
-        <ReceiptModal 
-          donation={publicReceiptDonation} 
-          isOpen={true} 
-          onClose={() => { setPublicReceiptDonation(null); window.history.replaceState({}, '', '/'); }}
-          onNavigateHome={() => { setPublicReceiptDonation(null); window.history.replaceState({}, '', '/'); }}
-        />
-      </div>
-    );
+  // REQUIREMENT 1, 2, 3 & 10: Exclude public receipt route from authentication guards entirely!
+  if (publicReceiptNo) {
+    return <PublicReceiptPage initialReceiptNo={publicReceiptNo} />;
   }
 
   // If user is unauthenticated or explicitly signed out, render LoginPage Portal landing view!

@@ -9,7 +9,8 @@ export function generateWhatsAppLink(donation, committeeInfo) {
   const paymentStatus = donation.paymentMethod === 'Cash' ? 'CASH RECEIVED ✓' : 'SUCCESSFUL ✓';
   const receiptNo = donation.receiptNo || 'SRS-2026-000001';
 
-  const receiptUrl = `https://sree-ram-sena-app.vercel.app/?receiptNo=${encodeURIComponent(receiptNo)}`;
+  // REQUIREMENT 8 & 9: Permanent clean URL safe for WhatsApp sharing
+  const receiptUrl = `https://sree-ram-sena-app.vercel.app/receipt/${encodeURIComponent(receiptNo)}`;
 
   const text = `🙏 *శ్రీ గణేష్ ప్రీతి*
 వినాయక చవితి 2026 సేవా కార్యక్రమానికి మీ విలువైన విరాళానికి హృదయపూర్వక ధన్యవాదములు.
