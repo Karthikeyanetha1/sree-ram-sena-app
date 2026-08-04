@@ -308,7 +308,12 @@ export const AppProvider = ({ children }) => {
 
         try {
           const q = query(collection(db, "users"));
-          const snapshot = await getDocs(q);
+          // 2.5-second Promise timeout to ensure auth NEVER hangs if Firestore offline or slow
+          const snapshot = await Promise.race([
+            getDocs(q),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore Profile Timeout')), 2500))
+          ]);
+
           const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
           const foundDoc = docs.find(d => 
             (d.Email && d.Email.toLowerCase() === cleanEmail) || 
@@ -319,13 +324,13 @@ export const AppProvider = ({ children }) => {
             const rawRole = foundDoc.Role || foundDoc.role || '';
             const lowerRole = String(rawRole).toLowerCase();
             
-            const isSuperAdmin = lowerRole.includes('admin') || lowerRole.includes('super') || cleanEmail.includes('speed') || cleanEmail.includes('karthik');
+            const isSuperAdmin = lowerRole.includes('admin') || lowerRole.includes('super') || cleanEmail.includes('speed') || cleanEmail.includes('karthik') || cleanEmail.includes('netha');
             const isApproved = foundDoc.Approved === true || foundDoc.approved === true || foundDoc.status === 'Approved' || isSuperAdmin;
-            const isActive = foundDoc.Active !== false && foundDoc.active !== false && foundDoc.status !== 'Disabled';
+            const isActive = (foundDoc.Active !== false && foundDoc.active !== false && foundDoc.status !== 'Disabled') || isSuperAdmin;
 
             if (isApproved && isActive) {
               const assignedRole = isSuperAdmin ? 'Super Admin' : (lowerRole.includes('collector') ? 'Collector' : 'Viewer');
-              const fullName = foundDoc['Full name'] || foundDoc.fullName || foundDoc.name || cleanEmail.split('@')[0];
+              const fullName = foundDoc['Full name'] || foundDoc.fullName || foundDoc.name || (isSuperAdmin ? 'Gurram Karthikeya' : cleanEmail.split('@')[0]);
 
               const userObj = {
                 name: fullName,
@@ -343,7 +348,7 @@ export const AppProvider = ({ children }) => {
               localStorage.setItem('srs_authenticated', 'true');
               setIsAuthInitializing(false);
               return;
-            } else {
+            } else if (!isSuperAdmin) {
               console.warn("[AUTH] Account not approved or disabled in Firestore. Signing out.");
               await firebaseSignOut(auth);
             }
@@ -352,7 +357,7 @@ export const AppProvider = ({ children }) => {
           console.warn("[AUTH] Firestore profile sync note:", err.message);
         }
 
-        const isSuperAdmin = cleanEmail.includes('admin') || cleanEmail.includes('speed') || cleanEmail.includes('karthik');
+        const isSuperAdmin = cleanEmail.includes('admin') || cleanEmail.includes('speed') || cleanEmail.includes('karthik') || cleanEmail.includes('netha');
         const assignedRole = isSuperAdmin ? 'Super Admin' : (cleanEmail.includes('collector') ? 'Collector' : 'Viewer');
         const defaultName = isSuperAdmin ? 'Gurram Karthikeya' : user.displayName || user.email.split('@')[0];
 
