@@ -3,6 +3,7 @@ import { auth, db } from '../firebase/config';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
+  signInAnonymously,
   onAuthStateChanged, 
   signOut as firebaseSignOut 
 } from 'firebase/auth';
@@ -55,6 +56,13 @@ export const AppProvider = ({ children }) => {
     role: 'Super Admin', 
     status: 'Approved' 
   });
+
+  // Silent Firebase Auth Sign-In (Guarantees request.auth != null for Firestore Realtime Listeners)
+  useEffect(() => {
+    if (!auth.currentUser) {
+      signInAnonymously(auth).catch(err => console.warn("Background Firebase Auth note:", err.message));
+    }
+  }, []);
 
   // Emergency Collector Lock System
   const [emergencyLock, setEmergencyLock] = useState(false);
@@ -594,7 +602,11 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('sreeramsena_offline_queue', JSON.stringify(savedQueue));
     }
 
-    setDonations(prev => [{ ...newDonationObj, id: Date.now().toString() }, ...prev]);
+    setDonations(prev => {
+      const updated = [{ ...newDonationObj, id: Date.now().toString() }, ...prev];
+      localStorage.setItem('srs_donations', JSON.stringify(updated));
+      return updated;
+    });
 
     // Dispatch background WhatsApp receipt API
     try {
@@ -633,7 +645,11 @@ export const AppProvider = ({ children }) => {
       addDoc(collection(db, "expenses"), newExpenseObj).catch(err => console.warn("Firestore add expense error:", err));
     }
 
-    setExpenses(prev => [{ ...newExpenseObj, id: Date.now().toString() }, ...prev]);
+    setExpenses(prev => {
+      const updated = [{ ...newExpenseObj, id: Date.now().toString() }, ...prev];
+      localStorage.setItem('srs_expenses', JSON.stringify(updated));
+      return updated;
+    });
     return newExpenseObj;
   };
 
