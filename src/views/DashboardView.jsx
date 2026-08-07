@@ -34,18 +34,21 @@ import {
 export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice, onViewReceipt, onOpenOcr, onOpenLogin, onOpenWizard }) => {
   const { t, donations, expenses, committeeInfo, role, currentUser } = useApp();
 
-  const totalDonationsAmount = donations.reduce((acc, d) => acc + (parseFloat(d.amount) || 0), 0);
-  const totalExpensesAmount = expenses.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
+  const safeDonations = Array.isArray(donations) ? donations : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+
+  const totalDonationsAmount = safeDonations.reduce((acc, d) => acc + (parseFloat(d?.amount) || 0), 0);
+  const totalExpensesAmount = safeExpenses.reduce((acc, e) => acc + (parseFloat(e?.amount) || 0), 0);
   const netBalanceAmount = totalDonationsAmount - totalExpensesAmount;
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const todaysCollection = donations
-    .filter(d => d.date === todayStr)
-    .reduce((acc, d) => acc + (parseFloat(d.amount) || 0), 0);
+  const todaysCollection = safeDonations
+    .filter(d => d && d.date === todayStr)
+    .reduce((acc, d) => acc + (parseFloat(d?.amount) || 0), 0);
 
-  const todaysExpenses = expenses
-    .filter(e => e.date === todayStr)
-    .reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
+  const todaysExpenses = safeExpenses
+    .filter(e => e && e.date === todayStr)
+    .reduce((acc, e) => acc + (parseFloat(e?.amount) || 0), 0);
 
   const trendData = [
     { day: 'Mon', collection: 0, expense: 0 },

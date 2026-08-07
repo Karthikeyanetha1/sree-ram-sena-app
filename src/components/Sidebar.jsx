@@ -39,7 +39,7 @@ export const Sidebar = ({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) 
       <div className="p-4 border-b border-slate-100 flex items-center justify-between md:hidden">
         <div className="flex items-center space-x-2">
           <ShieldCheck className="w-5 h-5 text-emerald-700" />
-          <span className="font-extrabold text-sm text-slate-900">{committeeInfo.name}</span>
+          <span className="font-extrabold text-sm text-slate-900">{committeeInfo?.name || "SREE RAM SENA"}</span>
         </div>
         <button 
           onClick={() => setMobileOpen(false)}

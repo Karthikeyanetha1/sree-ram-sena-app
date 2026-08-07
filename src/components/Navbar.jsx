@@ -61,14 +61,14 @@ export const Navbar = ({
               <div>
                 <div className="flex items-center space-x-1.5">
                   <h1 className="font-black text-xs sm:text-base text-slate-900 tracking-tight leading-none truncate max-w-[120px] sm:max-w-none">
-                    {committeeInfo.name}
+                    {committeeInfo?.name || "SREE RAM SENA"}
                   </h1>
                   <span className="bg-indigo-100 text-indigo-900 text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-full border border-indigo-200">
                     2026
                   </span>
                 </div>
                 <p className="text-[10px] sm:text-[11px] font-bold text-indigo-600 mt-0.5 hidden xs:block">
-                  {t.appSubName}
+                  {t?.appSubName || "Divine Manager 2026"}
                 </p>
               </div>
             </div>
