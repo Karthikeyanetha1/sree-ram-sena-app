@@ -33,7 +33,7 @@ export const Navbar = ({
   onOpenWhatsApp,
   onOpenAuditLog
 }) => {
-  const { lang, setLang, t, role, notifications, committeeInfo, isOnline, isAuthenticated, currentUser, signOut } = useApp();
+  const { lang, setLang, t, role, notifications, committeeInfo, isOnline, isAuthenticated, currentUser, signOut, registeredUsers = [] } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
