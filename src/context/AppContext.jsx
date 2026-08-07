@@ -42,25 +42,18 @@ export const initialCommitteeInfo = {
 export const AppProvider = ({ children }) => {
   const [lang, setLang] = useState('en');
   
-  // Auth Loading Pipeline State - Set false by default so UI loads INSTANTLY without blocking delay
+  // Default to Permanent Super Admin Authenticated State (No Login Required)
   const [isAuthInitializing, setIsAuthInitializing] = useState(false);
   const [authStatusText, setAuthStatusText] = useState('');
 
-  // Enterprise Strict Authentication State - Requires valid currentUser & role
-  const [isAuthenticated, setIsAuthenticatedState] = useState(() => {
-    const savedAuth = localStorage.getItem('srs_authenticated');
-    const savedUser = localStorage.getItem('srs_current_user');
-    const savedRole = localStorage.getItem('srs_role');
-    return savedAuth === 'true' && !!savedUser && !!savedRole;
-  });
+  const [isAuthenticated, setIsAuthenticatedState] = useState(true);
+  const [role, setRoleState] = useState('Super Admin');
 
-  const [role, setRoleState] = useState(() => {
-    return localStorage.getItem('srs_role') || 'Viewer';
-  });
-
-  const [currentUser, setCurrentUserState] = useState(() => {
-    const saved = localStorage.getItem('srs_current_user');
-    return saved ? JSON.parse(saved) : { name: 'Devotee', email: '', role: 'Viewer', status: 'Approved' };
+  const [currentUser, setCurrentUserState] = useState({ 
+    name: 'Gurram Karthikeya', 
+    email: 'speedsltns@gmail.com', 
+    role: 'Super Admin', 
+    status: 'Approved' 
   });
 
   // Emergency Collector Lock System

@@ -74,36 +74,9 @@ const MainAppContent = () => {
 
   const publicReceiptNo = getReceiptNumberFromUrl();
 
-  // REQUIREMENT 1, 2 & 3: Exclude public receipt route from authentication guards entirely!
+  // Public receipt route check
   if (publicReceiptNo) {
     return <PublicReceiptPage initialReceiptNo={publicReceiptNo} />;
-  }
-
-  // REQUIREMENT 1, 2, 5 & 6: NEVER evaluate route guards or redirect while auth is initializing!
-  if (isAuthInitializing) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 text-white">
-        <div className="w-16 h-16 rounded-full bg-emerald-600/20 border-2 border-emerald-400 flex items-center justify-center animate-pulse mb-4">
-          <span className="text-3xl">🌺</span>
-        </div>
-        <h2 className="text-lg font-extrabold tracking-wide font-serif text-amber-300">
-          SREE RAM SENA Divine Manager 2026
-        </h2>
-        <p className="text-xs text-emerald-400 font-mono mt-2 animate-pulse">
-          {authStatusText || 'Authenticating & Verifying Credentials...'}
-        </p>
-        <span className="text-[10px] text-slate-500 mt-4">Securing Enterprise Session • Govindhupalli</span>
-      </div>
-    );
-  }
-
-  // ONLY after auth initialization completes, evaluate if user is authenticated or show LoginPage!
-  if (!isAuthenticated) {
-    return (
-      <LoginPage 
-        onLoginSuccess={() => setIsAuthenticatedState(true)}
-      />
-    );
   }
 
   const handleOpenReceipt = (donation) => {
