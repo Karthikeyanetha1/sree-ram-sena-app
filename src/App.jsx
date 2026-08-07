@@ -283,12 +283,24 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <LoginPage 
-          onLoginSuccess={() => {
-            this.setState({ hasError: false });
-            window.location.reload();
-          }} 
-        />
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white text-center">
+          <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-3xl mb-4">
+            🚩
+          </div>
+          <h2 className="text-xl font-bold text-amber-300 font-serif mb-2">SREE RAM SENA Divine Manager</h2>
+          <p className="text-sm text-slate-300 max-w-md mb-6">
+            Application rendering refreshed. Tap below to reload the dashboard cleanly.
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false });
+              window.location.reload();
+            }}
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-black rounded-xl shadow-lg transition"
+          >
+            Reload Dashboard
+          </button>
+        </div>
       );
     }
     return this.props.children;
