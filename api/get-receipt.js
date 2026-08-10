@@ -51,10 +51,17 @@ export default async function handler(req, res) {
 
   try {
     const db = admin.firestore();
-    const snapshot = await db.collection('donations')
+    let snapshot = await db.collection('donations')
       .where('receiptNo', '==', String(receiptNo).trim())
       .limit(1)
       .get();
+
+    if (snapshot.empty) {
+      snapshot = await db.collection('donations')
+        .where('Receipt No', '==', String(receiptNo).trim())
+        .limit(1)
+        .get();
+    }
 
     if (snapshot.empty) {
       return res.status(404).json({ success: false, error: 'Receipt not found' });

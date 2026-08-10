@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { db } from '../firebase/config';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
   ShieldCheck, 
@@ -38,32 +40,96 @@ export const PublicReceiptPage = ({ initialReceiptNo }) => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const fetchReceipt = (noToFetch) => {
+  const fetchReceipt = async (noToFetch) => {
     if (!noToFetch) {
       setLoading(false);
       setNotFound(true);
       return;
     }
+    const targetNo = String(noToFetch).trim();
     setLoading(true);
     setNotFound(false);
 
-    fetch(`/api/get-receipt?receiptNo=${encodeURIComponent(noToFetch.trim())}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.donation) {
-          setReceipt(data.donation);
-          setNotFound(false);
-        } else {
-          setReceipt(null);
-          setNotFound(true);
-        }
-      })
-      .catch(err => {
-        console.warn("Public receipt fetch error:", err);
-        setReceipt(null);
-        setNotFound(true);
-      })
-      .finally(() => setLoading(false));
+    // 1. Try Serverless API (/api/get-receipt)
+    try {
+      const res = await fetch(`/api/get-receipt?receiptNo=${encodeURIComponent(targetNo)}`);
+      const data = await res.json();
+      if (data.success && data.donation) {
+        setReceipt(data.donation);
+        setNotFound(false);
+        setLoading(false);
+        return;
+      }
+    } catch (e) {
+      console.warn("API receipt fetch note:", e.message);
+    }
+
+    // 2. Fallback: Query Direct Cloud Firestore DB (donations collection)
+    try {
+      const q1 = query(collection(db, "donations"), where("receiptNo", "==", targetNo));
+      let snap = await getDocs(q1);
+
+      if (snap.empty) {
+        const q2 = query(collection(db, "donations"), where("Receipt No", "==", targetNo));
+        snap = await getDocs(q2);
+      }
+
+      if (!snap.empty) {
+        const d = snap.docs[0].data();
+        const foundDonation = {
+          id: snap.docs[0].id,
+          receiptNo: d.receiptNo || d['Receipt No'] || targetNo,
+          donorName: d.donorName || d['Donor Name'] || d.name || 'Devotee',
+          amount: parseFloat(d.amount || d.Amount) || 0,
+          date: d.date || d.Date || '',
+          paymentMethod: d.paymentMethod || d['Payment Method'] || 'UPI',
+          village: d.village || d.Village || 'Govindhupalli',
+          address: d.address || d.Address || '',
+          mobile: d.mobile || d.Mobile || '',
+          notes: d.notes || d.Notes || '',
+          status: d.status || d.Status || 'Verified',
+          collectorName: d.collectorName || d.collector || d['Collector'] || 'SREE RAM SENA'
+        };
+        setReceipt(foundDonation);
+        setNotFound(false);
+        setLoading(false);
+        return;
+      }
+    } catch (dbErr) {
+      console.warn("Direct Firestore receipt query note:", dbErr.message);
+    }
+
+    // 3. Fallback: Search LocalStorage Cache (srs_donations)
+    try {
+      const cached = JSON.parse(localStorage.getItem('srs_donations') || '[]');
+      const foundLocal = cached.find(item => 
+        String(item.receiptNo || item['Receipt No']).trim() === targetNo
+      );
+
+      if (foundLocal) {
+        setReceipt({
+          id: foundLocal.id || 'cached-receipt',
+          receiptNo: foundLocal.receiptNo || targetNo,
+          donorName: foundLocal.donorName || foundLocal['Donor Name'] || 'Devotee',
+          amount: parseFloat(foundLocal.amount) || 0,
+          date: foundLocal.date || '',
+          paymentMethod: foundLocal.paymentMethod || 'UPI',
+          village: foundLocal.village || 'Govindhupalli',
+          address: foundLocal.address || '',
+          mobile: foundLocal.mobile || '',
+          notes: foundLocal.notes || '',
+          status: 'Verified',
+          collectorName: foundLocal.collector || 'SREE RAM SENA'
+        });
+        setNotFound(false);
+        setLoading(false);
+        return;
+      }
+    } catch (cacheErr) {}
+
+    setReceipt(null);
+    setNotFound(true);
+    setLoading(false);
   };
 
   useEffect(() => {
