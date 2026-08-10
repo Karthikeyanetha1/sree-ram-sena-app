@@ -57,10 +57,14 @@ export const AppProvider = ({ children }) => {
     status: 'Approved' 
   });
 
-  // Silent Firebase Auth Sign-In (Guarantees request.auth != null for Firestore Realtime Listeners)
+  // Silent Firebase Auth Sign-In with Super Admin Credentials
   useEffect(() => {
     if (!auth.currentUser) {
-      signInAnonymously(auth).catch(err => console.warn("Background Firebase Auth note:", err.message));
+      signInWithEmailAndPassword(auth, 'speedsltns@gmail.com', 'netha@123')
+        .catch(() => {
+          signInWithEmailAndPassword(auth, 'speedsltns@gmail.com', 'sreeram2026')
+            .catch(err => console.warn("Firebase Auth silent sign-in note:", err.message));
+        });
     }
   }, []);
 
