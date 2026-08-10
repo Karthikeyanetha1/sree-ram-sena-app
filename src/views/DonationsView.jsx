@@ -19,7 +19,8 @@ import {
   Check,
   Send,
   Sparkles,
-  Zap
+  Zap,
+  User
 } from 'lucide-react';
 
 export const DonationsView = ({ onViewReceipt, openAddModal, setOpenAddModal, onOpenOcr }) => {
