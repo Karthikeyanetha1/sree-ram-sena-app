@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 export const DonationsView = ({ onViewReceipt, openAddModal, setOpenAddModal, onOpenOcr }) => {
-  const { t, donations, addDonation, deleteDonation, updateDonation, committeeInfo, role } = useApp();
+  const { t, donations, addDonation, deleteDonation, updateDonation, committeeInfo, role, currentUser, registeredUsers = [] } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('All');
