@@ -45,30 +45,19 @@ export const initialCommitteeInfo = {
 export const AppProvider = ({ children }) => {
   const [lang, setLang] = useState('en');
   
-  // Default to Permanent Super Admin Authenticated State (No Login Required)
-  const [isAuthInitializing, setIsAuthInitializing] = useState(false);
-  const [authStatusText, setAuthStatusText] = useState('');
+  // Default to Unauthenticated Public Devotee State (Sign In Required for Super Admin / Collector Access)
+  const [isAuthInitializing, setIsAuthInitializing] = useState(true);
+  const [authStatusText, setAuthStatusText] = useState('Initializing Firebase Auth...');
 
-  const [isAuthenticated, setIsAuthenticatedState] = useState(true);
-  const [role, setRoleState] = useState('Super Admin');
+  const [isAuthenticated, setIsAuthenticatedState] = useState(false);
+  const [role, setRoleState] = useState('Viewer');
 
   const [currentUser, setCurrentUserState] = useState({ 
-    name: 'Gurram Karthikeya', 
-    email: 'speedsltns@gmail.com', 
-    role: 'Super Admin', 
+    name: 'Public Devotee', 
+    email: '', 
+    role: 'Viewer', 
     status: 'Approved' 
   });
-
-  // Silent Firebase Auth Sign-In with Super Admin Credentials
-  useEffect(() => {
-    if (!auth.currentUser) {
-      signInWithEmailAndPassword(auth, 'speedsltns@gmail.com', 'netha@123')
-        .catch(() => {
-          signInWithEmailAndPassword(auth, 'speedsltns@gmail.com', 'sreeram2026')
-            .catch(err => console.warn("Firebase Auth silent sign-in note:", err.message));
-        });
-    }
-  }, []);
 
   // Emergency Collector Lock System
   const [emergencyLock, setEmergencyLock] = useState(false);
@@ -383,20 +372,13 @@ export const AppProvider = ({ children }) => {
         setIsAuthenticatedState(true);
         localStorage.setItem('srs_authenticated', 'true');
       } else {
-        const savedAuth = localStorage.getItem('srs_authenticated');
-        const savedUser = localStorage.getItem('srs_current_user');
-        if (savedAuth === 'true' && savedUser) {
-          console.log("[AUTH] Firebase user null, but active local session restored from localStorage.");
-          setIsAuthenticatedState(true);
-        } else {
-          console.log("[AUTH] No active session found. User unauthenticated.");
-          setIsAuthenticatedState(false);
-          localStorage.setItem('srs_authenticated', 'false');
-          setRoleState('Viewer');
-          localStorage.setItem('srs_role', 'Viewer');
-          setCurrentUserState({ name: 'Public Devotee', email: '', role: 'Viewer', status: 'Approved' });
-          localStorage.removeItem('srs_current_user');
-        }
+        console.log("[AUTH] No active Firebase auth session found. User unauthenticated (Viewer Mode).");
+        setIsAuthenticatedState(false);
+        setRoleState('Viewer');
+        setCurrentUserState({ name: 'Public Devotee', email: '', role: 'Viewer', status: 'Approved' });
+        localStorage.removeItem('srs_current_user');
+        localStorage.setItem('srs_authenticated', 'false');
+        localStorage.setItem('srs_role', 'Viewer');
       }
 
       setIsAuthInitializing(false);

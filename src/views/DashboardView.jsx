@@ -80,12 +80,23 @@ export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2">
-              Welcome back, {currentUser?.name || (role === 'Super Admin' ? 'Dustin (Super Admin)' : role === 'Collector' ? 'Prince (Collector)' : 'Devotee')}!
+              {isAuthenticated 
+                ? `Welcome back, ${currentUser?.name || 'Authorized User'}!`
+                : `Welcome to SREE RAM SENA Divine Manager (${selectedYear})`
+              }
             </h1>
 
-            <p className="text-xs sm:text-sm text-emerald-100/90 mt-1 max-w-xl flex items-center gap-2 font-medium">
-              <span>Last login: Today, 8:15 AM • Mobile / Chrome on Linux</span>
-              {role === 'Super Admin' && onOpenWizard && (
+            <p className="text-xs sm:text-sm text-emerald-100/90 mt-1 max-w-xl flex items-center gap-2 font-medium flex-wrap">
+              <span>{isAuthenticated ? `Signed in as ${role} (${currentUser?.email})` : 'Public Devotee Mode • Read-Only View'}</span>
+              {!isAuthenticated && onOpenLogin && (
+                <button
+                  onClick={onOpenLogin}
+                  className="bg-amber-400 hover:bg-amber-500 text-slate-950 text-[11px] font-extrabold px-3 py-1 rounded-lg transition shadow-md flex items-center gap-1 ml-2"
+                >
+                  <span>🔑 Sign In (Super Admin / Collector)</span>
+                </button>
+              )}
+              {isAuthenticated && role === 'Super Admin' && onOpenWizard && (
                 <button
                   onClick={onOpenWizard}
                   className="bg-white/20 hover:bg-white/30 text-white text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg border border-white/30 transition shadow-xs"
