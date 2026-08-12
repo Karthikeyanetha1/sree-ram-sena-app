@@ -4,7 +4,7 @@ import { ShieldCheck, X, ArrowRight, CheckCircle, QrCode, Calendar, Users, Spark
 
 export const FirstLoginWizardModal = ({ isOpen, onClose }) => {
   const { committeeInfo, setCommitteeInfo, registeredUsers = [] } = useApp();
-  const [step, setStep] = useState(1); // Step 1 to 4
+  const [step, setStep] = useState(1);
 
   const [wizardName, setWizardName] = useState(committeeInfo.name);
   const [wizardVillage, setWizardVillage] = useState(committeeInfo.village);
@@ -19,7 +19,6 @@ export const FirstLoginWizardModal = ({ isOpen, onClose }) => {
     if (step < 4) {
       setStep(step + 1);
     } else {
-      // Save changes
       setCommitteeInfo({
         ...committeeInfo,
         name: wizardName,
@@ -27,6 +26,8 @@ export const FirstLoginWizardModal = ({ isOpen, onClose }) => {
         phone: wizardPhone,
         upiId: wizardUpi
       });
+      alert("✓ Super Admin Setup Completed Successfully! Committee parameters updated.");
+      setStep(1);
       onClose();
     }
   };

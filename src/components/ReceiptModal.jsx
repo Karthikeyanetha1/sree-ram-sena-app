@@ -172,7 +172,12 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
         <div className="p-4 sm:p-6 printable-area bg-white relative">
           
           {/* RECEIPT OUTER BORDER WITH DOUBLE GOLD & EMERALD BORDER */}
-          <div className="border-[6px] border-double border-emerald-800 rounded-3xl p-5 sm:p-6 bg-gradient-to-b from-amber-50/40 via-white to-emerald-50/30 relative shadow-inner">
+          <div className="border-[6px] border-double border-emerald-800 rounded-3xl p-5 sm:p-6 bg-gradient-to-b from-amber-50/40 via-white to-emerald-50/30 relative shadow-inner overflow-hidden">
+            
+            {/* SACRED LORD GANESHA WATERMARK OVERLAY */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 select-none z-0">
+              <span className="text-[170px] leading-none text-amber-900 font-serif transform -rotate-12">🐘</span>
+            </div>
             
             {/* Top Mantra Banner */}
             <div className="text-center mb-3">

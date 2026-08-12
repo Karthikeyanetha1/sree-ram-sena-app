@@ -300,6 +300,11 @@ ${cleanUrl}`;
               id="public-receipt-card"
               className="bg-white text-slate-900 rounded-3xl p-5 sm:p-6 shadow-2xl border-[6px] border-double border-emerald-800 relative overflow-hidden bg-gradient-to-b from-amber-50/40 via-white to-emerald-50/30"
             >
+              {/* SACRED LORD GANESHA WATERMARK OVERLAY */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 select-none z-0">
+                <span className="text-[170px] leading-none text-amber-900 font-serif transform -rotate-12">🐘</span>
+              </div>
+
               {/* Top Sacred Mantra Banner */}
               <div className="text-center mb-3">
                 <span className="inline-block bg-amber-100 text-amber-900 px-4 py-0.5 rounded-full text-xs font-extrabold tracking-widest border border-amber-300 shadow-xs">

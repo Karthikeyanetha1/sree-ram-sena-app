@@ -231,8 +231,8 @@ const MainAppContent = () => {
         <main className="flex-1 md:ml-64 min-w-0">
           {activeTab === 'dashboard' && (
             <DashboardView 
-              onOpenNewDonation={() => setNewDonationModalOpen(true)}
-              onOpenNewExpense={() => setNewExpenseModalOpen(true)}
+              onOpenNewDonation={() => { setActiveTab('donations'); setNewDonationModalOpen(true); }}
+              onOpenNewExpense={() => { setActiveTab('expenses'); setNewExpenseModalOpen(true); }}
               onOpenVoice={() => setVoiceOpen(true)}
               onViewReceipt={handleOpenReceipt}
               onOpenOcr={() => { setOcrMode('donation'); setOcrOpen(true); }}
