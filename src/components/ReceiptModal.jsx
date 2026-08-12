@@ -42,7 +42,7 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
     window.print();
   };
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPdf = async () => {
     try {
       const receiptElem = document.getElementById('receipt-printable-area');
       if (!receiptElem) return;
