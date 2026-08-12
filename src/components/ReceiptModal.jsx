@@ -174,10 +174,10 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
             </div>
 
             {/* TOP SECTION: SREE RAM SENA LOGO + LORD GANESHA IDOL LOGO */}
-            <div className="flex items-center justify-between pb-4 border-b-2 border-emerald-800/30 gap-2 sm:gap-3 relative z-10">
+            <div className="flex items-center justify-between pb-4 border-b-2 border-emerald-800/30 gap-2 relative z-10">
               
-              {/* Left Official Gold Emblem Logo (ENLARGED) */}
-              <div className="w-16 h-16 sm:w-22 sm:h-22 rounded-full border-2 sm:border-3 border-amber-400 p-0.5 flex items-center justify-center bg-black shadow-lg flex-shrink-0 overflow-hidden">
+              {/* Left Official Gold Emblem Logo */}
+              <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border-2 sm:border-3 border-amber-400 p-0.5 flex items-center justify-center bg-black shadow-md flex-shrink-0 overflow-hidden">
                 <img 
                   src="/assets/sree_ram_sena_logo.jpg" 
                   alt="SREE RAM SENA YOUTH GOVINDUPALLY" 
@@ -186,20 +186,20 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
               </div>
 
               {/* Center Title */}
-              <div className="text-center flex-1 min-w-0">
-                <h2 className="text-base sm:text-2xl font-black text-emerald-950 tracking-tight uppercase leading-tight font-serif break-words max-w-full px-1">
+              <div className="text-center flex-1 min-w-0 px-1">
+                <h2 className="text-sm sm:text-xl font-black text-emerald-950 tracking-tight uppercase leading-tight font-serif whitespace-nowrap overflow-hidden text-ellipsis">
                   {committeeInfo.name}
                 </h2>
-                <h3 className="text-xs sm:text-sm font-extrabold text-amber-700 tracking-wider uppercase mt-0.5">
+                <h3 className="text-[11px] sm:text-xs font-extrabold text-amber-700 tracking-wider uppercase mt-0.5 whitespace-nowrap">
                   VINAYAKA CHAVITHI 2026
                 </h3>
-                <span className="text-[9px] sm:text-[10px] font-extrabold text-emerald-800 tracking-widest uppercase block mt-0.5 bg-emerald-100/80 px-2.5 py-0.5 rounded-full inline-block">
-                  VINAYAKA CHAVITHI DONATION RECEIPT
+                <span className="text-[8px] sm:text-[10px] font-extrabold text-emerald-800 tracking-widest uppercase block mt-0.5 bg-emerald-100/80 px-2 py-0.5 rounded-full inline-block whitespace-nowrap">
+                  DONATION RECEIPT
                 </span>
               </div>
 
-              {/* Right Lord Ganesha Idol Photo Logo (ENLARGED) */}
-              <div className="w-16 h-16 sm:w-22 sm:h-22 rounded-full border-2 sm:border-3 border-amber-400 p-0.5 flex items-center justify-center bg-amber-900 shadow-lg flex-shrink-0 overflow-hidden">
+              {/* Right Lord Ganesha Idol Photo Logo */}
+              <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border-2 sm:border-3 border-amber-400 p-0.5 flex items-center justify-center bg-amber-900 shadow-md flex-shrink-0 overflow-hidden">
                 <img 
                   src="/assets/right_ganesha_header.jpg" 
                   alt="Lord Ganesha Seva Idol" 
