@@ -643,8 +643,18 @@ export const AppProvider = ({ children }) => {
         return timeB - timeA;
       });
 
-      setDonations(liveData);
-      localStorage.setItem(`srs_donations_${selectedYear}`, JSON.stringify(liveData));
+      // Deduplicate liveData by ID to guarantee unique React keys
+      const seenIds = new Set();
+      const uniqueLiveData = [];
+      for (const item of liveData) {
+        if (!seenIds.has(item.id)) {
+          seenIds.add(item.id);
+          uniqueLiveData.push(item);
+        }
+      }
+
+      setDonations(uniqueLiveData);
+      localStorage.setItem(`srs_donations_${selectedYear}`, JSON.stringify(uniqueLiveData));
     }, (error) => {
       console.warn(`Firestore live donations listener note (${selectedYear}):`, error.message);
     });

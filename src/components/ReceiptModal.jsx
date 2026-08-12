@@ -95,36 +95,16 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
     }
   };
 
-  const handleWhatsApp = async () => {
+  const handleWhatsApp = () => {
     const waLink = generateWhatsAppLink(donation, committeeInfo);
-
-    if (navigator.share && navigator.canShare) {
-      try {
-        const receiptElem = document.getElementById('receipt-printable-area');
-        if (receiptElem) {
-          const canvas = await html2canvas(receiptElem, { scale: 2, useCORS: true });
-          canvas.toBlob(async (blob) => {
-            if (blob) {
-              const file = new File([blob], `SRS-Receipt-${donation.receiptNo || '2026'}.png`, { type: 'image/png' });
-              if (navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                  title: `SREE RAM SENA Official Receipt ${donation.receiptNo}`,
-                  text: `🙏 Official Receipt for ${donation.donorName} - ₹${donation.amount}`,
-                  files: [file]
-                });
-                return;
-              }
-            }
-            window.open(waLink, '_blank');
-          }, 'image/png');
-          return;
-        }
-      } catch (err) {
-        console.warn("Web Share API note:", err);
+    try {
+      const opened = window.open(waLink, '_blank');
+      if (!opened || opened.closed || typeof opened.closed === 'undefined') {
+        window.location.href = waLink;
       }
+    } catch (e) {
+      window.location.href = waLink;
     }
-
-    window.open(waLink, '_blank');
   };
 
   const handleBackHome = () => {
