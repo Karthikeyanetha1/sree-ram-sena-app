@@ -42,19 +42,38 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
     window.print();
   };
 
-  const handleDownloadPdf = async () => {
+  const handleDownloadPDF = async () => {
     try {
       const receiptElem = document.getElementById('receipt-printable-area');
-      if (!receiptElem) {
-        window.print();
-        return;
-      }
-      const canvas = await html2canvas(receiptElem, { scale: 2, useCORS: true });
+      if (!receiptElem) return;
+
+      const canvas = await html2canvas(receiptElem, { 
+        scale: 2, 
+        useCORS: true,
+        logging: false,
+        windowWidth: 1200
+      });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const margin = 6;
+      const maxWidth = pageWidth - (margin * 2);
+      const maxHeight = pageHeight - (margin * 2);
+
+      let imgWidth = maxWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      if (imgHeight > maxHeight) {
+        imgHeight = maxHeight;
+        imgWidth = (canvas.width * imgHeight) / canvas.height;
+      }
+
+      const xPos = (pageWidth - imgWidth) / 2;
+      const yPos = (pageHeight - imgHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight, undefined, 'FAST');
       pdf.save(`SRS-Receipt-${donation.receiptNo || '2026'}.pdf`);
     } catch (err) {
       console.warn("PDF generation fallback to print:", err);
@@ -67,12 +86,33 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
       const receiptElem = document.getElementById('receipt-printable-area');
       if (!receiptElem) return;
 
-      const canvas = await html2canvas(receiptElem, { scale: 2, useCORS: true });
+      const canvas = await html2canvas(receiptElem, { 
+        scale: 2, 
+        useCORS: true,
+        logging: false,
+        windowWidth: 1200
+      });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const margin = 6;
+      const maxWidth = pageWidth - (margin * 2);
+      const maxHeight = pageHeight - (margin * 2);
+
+      let imgWidth = maxWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      if (imgHeight > maxHeight) {
+        imgHeight = maxHeight;
+        imgWidth = (canvas.width * imgHeight) / canvas.height;
+      }
+
+      const xPos = (pageWidth - imgWidth) / 2;
+      const yPos = (pageHeight - imgHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight, undefined, 'FAST');
       
       const pdfBlob = pdf.output('blob');
       const pdfFile = new File([pdfBlob], `SRS-Receipt-${donation.receiptNo || '2026'}.pdf`, { type: 'application/pdf' });
@@ -91,7 +131,6 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
       window.open(waLink, '_blank');
     } catch (err) {
       console.warn("Direct PDF share error:", err);
-      handleDownloadPdf();
     }
   };
 
