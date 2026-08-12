@@ -42,6 +42,36 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
     window.print();
   };
 
+  const addInteractivePdfLinks = (pdf, receiptElem, xPos, yPos, imgWidth, imgHeight) => {
+    if (!receiptElem || !pdf) return;
+    const containerRect = receiptElem.getBoundingClientRect();
+    if (!containerRect.width || !containerRect.height) return;
+
+    const scaleX = imgWidth / containerRect.width;
+    const scaleY = imgHeight / containerRect.height;
+
+    const linkElements = receiptElem.querySelectorAll('[data-pdf-link]');
+    linkElements.forEach(el => {
+      const url = el.getAttribute('data-pdf-link');
+      if (!url) return;
+
+      const elRect = el.getBoundingClientRect();
+      const relLeft = elRect.left - containerRect.left;
+      const relTop = elRect.top - containerRect.top;
+
+      const linkX = xPos + (relLeft * scaleX);
+      const linkY = yPos + (relTop * scaleY);
+      const linkW = elRect.width * scaleX;
+      const linkH = elRect.height * scaleY;
+
+      try {
+        pdf.link(linkX, linkY, linkW, linkH, { url });
+      } catch (e) {
+        console.warn("PDF link annotation note:", e);
+      }
+    });
+  };
+
   const handleDownloadPdf = async () => {
     try {
       const receiptElem = document.getElementById('receipt-printable-area');
@@ -74,6 +104,8 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
       const yPos = (pageHeight - imgHeight) / 2;
 
       pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight, undefined, 'FAST');
+      addInteractivePdfLinks(pdf, receiptElem, xPos, yPos, imgWidth, imgHeight);
+
       pdf.save(`SRS-Receipt-${donation.receiptNo || '2026'}.pdf`);
     } catch (err) {
       console.warn("PDF generation fallback to print:", err);
@@ -113,6 +145,7 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
       const yPos = (pageHeight - imgHeight) / 2;
 
       pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight, undefined, 'FAST');
+      addInteractivePdfLinks(pdf, receiptElem, xPos, yPos, imgWidth, imgHeight);
       
       const pdfBlob = pdf.output('blob');
       const pdfFile = new File([pdfBlob], `SRS-Receipt-${donation.receiptNo || '2026'}.pdf`, { type: 'application/pdf' });
@@ -163,6 +196,7 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
 
   const upiPayload = `upi://pay?pa=${committeeInfo.upiId || 'karthikeyanetha@slc'}&pn=SREE%20RAM%20SENA&am=${rawAmt}&cu=INR`;
   const locationUrl = committeeInfo.locationMapsUrl || "https://www.google.com/maps/place/18%C2%B047'04.8%22N+78%C2%B055'09.7%22E/@18.784665,78.9167941,17z";
+  const receiptUrl = `https://sree-ram-sena-app.vercel.app/receipt/${encodeURIComponent(donation.receiptNo || '2026')}`;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/85 backdrop-blur-md p-2 sm:p-6 flex justify-center items-start min-h-screen animate-in fade-in py-4 sm:py-8">
@@ -255,14 +289,21 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
 
             {/* RECEIPT NUMBER BADGE */}
             <div className="my-4 text-center">
-              <div className="inline-block bg-gradient-to-r from-emerald-950 via-emerald-800 to-emerald-950 text-white px-7 py-2.5 rounded-2xl shadow-lg border-2 border-amber-400/60 ring-2 ring-emerald-900/20">
+              <a 
+                href={receiptUrl}
+                target="_blank"
+                rel="noreferrer"
+                data-pdf-link={receiptUrl}
+                className="inline-block bg-gradient-to-r from-emerald-950 via-emerald-800 to-emerald-950 text-white px-7 py-2.5 rounded-2xl shadow-lg border-2 border-amber-400/60 ring-2 ring-emerald-900/20 hover:scale-105 transition cursor-pointer"
+                title="Click to Open Verified Digital Receipt URL"
+              >
                 <span className="text-[11px] font-black uppercase tracking-widest text-amber-300 mr-2">
                   RECEIPT NO:
                 </span>
                 <span className="text-lg font-black font-mono tracking-wider text-white">
                   {donation.receiptNo}
                 </span>
-              </div>
+              </a>
 
               <div className="mt-2 text-xs font-bold text-slate-600 flex items-center justify-center space-x-1">
                 <span>📅 Date & Time: </span>
@@ -381,6 +422,7 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
               {/* 1. CLICKABLE & SCANNABLE UPI PAYMENT QR CODE */}
               <a 
                 href={upiPayload} 
+                data-pdf-link={upiPayload}
                 className="bg-white p-2.5 rounded-2xl border border-emerald-300 shadow-xs flex flex-col items-center justify-center hover:scale-105 transition cursor-pointer"
                 title="Scan with Camera OR Click to Pay via PhonePe/GPay"
               >
@@ -407,6 +449,7 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
                 href={locationUrl} 
                 target="_blank" 
                 rel="noreferrer"
+                data-pdf-link={locationUrl}
                 className="bg-white p-2.5 rounded-2xl border border-emerald-300 shadow-xs flex flex-col items-center justify-center hover:scale-105 transition cursor-pointer"
                 title="Scan with Camera OR Click to Open Google Maps"
               >
@@ -442,7 +485,9 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
               <div className="pt-2 border-t border-emerald-800/80 flex flex-wrap items-center justify-center gap-3 text-[10px] font-bold text-emerald-200">
                 <span className="flex items-center gap-1">📞 {committeeInfo.phone || '8688496208'}</span>
                 <span className="flex items-center gap-1">📍 Govindhupalli, Jagtial</span>
-                <span className="flex items-center gap-1">📸 Instagram: {committeeInfo.instagram || '@sreeramsena_g.p'}</span>
+                <a href="https://instagram.com/sreeramsena_g.p" target="_blank" rel="noreferrer" data-pdf-link="https://instagram.com/sreeramsena_g.p" className="flex items-center gap-1 hover:underline">
+                  📸 Instagram: {committeeInfo.instagram || '@sreeramsena_g.p'}
+                </a>
               </div>
             </div>
 

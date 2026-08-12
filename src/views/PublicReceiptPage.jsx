@@ -175,6 +175,36 @@ export const PublicReceiptPage = ({ initialReceiptNo }) => {
     window.print();
   };
 
+  const addInteractivePdfLinks = (pdf, receiptElem, xPos, yPos, imgWidth, imgHeight) => {
+    if (!receiptElem || !pdf) return;
+    const containerRect = receiptElem.getBoundingClientRect();
+    if (!containerRect.width || !containerRect.height) return;
+
+    const scaleX = imgWidth / containerRect.width;
+    const scaleY = imgHeight / containerRect.height;
+
+    const linkElements = receiptElem.querySelectorAll('[data-pdf-link]');
+    linkElements.forEach(el => {
+      const url = el.getAttribute('data-pdf-link');
+      if (!url) return;
+
+      const elRect = el.getBoundingClientRect();
+      const relLeft = elRect.left - containerRect.left;
+      const relTop = elRect.top - containerRect.top;
+
+      const linkX = xPos + (relLeft * scaleX);
+      const linkY = yPos + (relTop * scaleY);
+      const linkW = elRect.width * scaleX;
+      const linkH = elRect.height * scaleY;
+
+      try {
+        pdf.link(linkX, linkY, linkW, linkH, { url });
+      } catch (e) {
+        console.warn("PDF link annotation note:", e);
+      }
+    });
+  };
+
   const handleDownloadPdf = async () => {
     try {
       const receiptElem = document.getElementById('public-receipt-card');
@@ -207,6 +237,8 @@ export const PublicReceiptPage = ({ initialReceiptNo }) => {
       const yPos = (pageHeight - imgHeight) / 2;
 
       pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight, undefined, 'FAST');
+      addInteractivePdfLinks(pdf, receiptElem, xPos, yPos, imgWidth, imgHeight);
+
       pdf.save(`SRS-Receipt-${receipt?.receiptNo || '2026'}.pdf`);
     } catch (err) {
       console.warn("PDF Download note:", err);
@@ -509,7 +541,8 @@ ${cleanUrl}`;
                 
                 {/* 1. UPI PAYMENT QR CODE */}
                 <a 
-                  href={`upi://pay?pa=karthikeyanetha@slc&pn=SREE%20RAM%20SENA&am=${receipt?.amount || 0}&cu=INR`} 
+                  href={`upi://pay?pa=karthikeyanetha@slc&pn=SREE%20RAM%20SENA&am=${receipt?.amount || 0}&cu=INR`}
+                  data-pdf-link={`upi://pay?pa=karthikeyanetha@slc&pn=SREE%20RAM%20SENA&am=${receipt?.amount || 0}&cu=INR`}
                   className="bg-white p-2 rounded-2xl border border-emerald-300 shadow-xs flex flex-col items-center justify-center hover:scale-105 transition cursor-pointer"
                   title="Scan with Camera OR Click to Pay via UPI"
                 >
@@ -536,6 +569,7 @@ ${cleanUrl}`;
                   href="https://www.google.com/maps/place/18%C2%B047'04.8%22N+78%C2%B055'09.7%22E/@18.784665,78.9167941,17z" 
                   target="_blank" 
                   rel="noreferrer"
+                  data-pdf-link="https://www.google.com/maps/place/18%C2%B047'04.8%22N+78%C2%B055'09.7%22E/@18.784665,78.9167941,17z"
                   className="bg-white p-2 rounded-2xl border border-emerald-300 shadow-xs flex flex-col items-center justify-center hover:scale-105 transition cursor-pointer"
                   title="Scan with Camera OR Click to Open Google Maps"
                 >
@@ -571,7 +605,9 @@ ${cleanUrl}`;
                 <div className="pt-1.5 border-t border-emerald-800/80 flex flex-wrap items-center justify-center gap-2.5 text-[9px] font-bold text-emerald-200">
                   <span className="flex items-center gap-1">📞 8688496208</span>
                   <span className="flex items-center gap-1">📍 Govindhupalli, Jagtial</span>
-                  <span className="flex items-center gap-1">📸 Instagram: @sreeramsena_g.p</span>
+                  <a href="https://instagram.com/sreeramsena_g.p" target="_blank" rel="noreferrer" data-pdf-link="https://instagram.com/sreeramsena_g.p" className="flex items-center gap-1 hover:underline">
+                    📸 Instagram: @sreeramsena_g.p
+                  </a>
                 </div>
               </div>
 
