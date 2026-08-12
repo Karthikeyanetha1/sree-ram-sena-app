@@ -49,7 +49,17 @@ export async function sendAutomatedWhatsAppReceipt(donation, committeeInfo, sett
 
   // 2. Auto-launch WhatsApp Web / App prefilled tab
   if (settings.autoLaunchOnReceipt) {
-    window.open(waUrl, '_blank');
+    try {
+      const a = document.createElement('a');
+      a.href = waUrl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      console.warn("Auto WhatsApp launch note:", e);
+    }
   }
 
   return { success: true, method: "Auto WhatsApp Tab Launch", url: waUrl };

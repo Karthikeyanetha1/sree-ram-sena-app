@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { generateWhatsAppLink } from '../utils/receiptGenerator';
+import { generateWhatsAppLink, amountInWords } from '../utils/receiptGenerator';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
   X, 
@@ -135,14 +135,18 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
   };
 
   const handleWhatsApp = () => {
+    if (!donation) return;
     const waLink = generateWhatsAppLink(donation, committeeInfo);
     try {
-      const opened = window.open(waLink, '_blank');
-      if (!opened || opened.closed || typeof opened.closed === 'undefined') {
-        window.location.href = waLink;
-      }
+      const a = document.createElement('a');
+      a.href = waLink;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch (e) {
-      window.location.href = waLink;
+      console.warn("WhatsApp open note:", e);
     }
   };
 
@@ -153,10 +157,11 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
     }
   };
 
-  const amountStr = parseFloat(donation.amount).toLocaleString('en-IN');
-  const paymentStatusText = donation.paymentMethod === 'Cash' ? 'CASH RECEIVED ✓' : 'SUCCESSFUL ✓';
+  const rawAmt = parseFloat(donation.amount || donation.Amount || 0) || 0;
+  const amountStr = rawAmt.toLocaleString('en-IN');
+  const paymentStatusText = (donation.paymentMethod === 'Cash' || donation.paymentStatus === 'Successful') ? 'SUCCESSFUL ✓' : (donation.paymentMethod || 'SUCCESSFUL ✓');
 
-  const upiPayload = `upi://pay?pa=${committeeInfo.upiId || 'karthikeyanetha@slc'}&pn=SREE%20RAM%20SENA&am=${donation.amount}&cu=INR`;
+  const upiPayload = `upi://pay?pa=${committeeInfo.upiId || 'karthikeyanetha@slc'}&pn=SREE%20RAM%20SENA&am=${rawAmt}&cu=INR`;
   const locationUrl = committeeInfo.locationMapsUrl || "https://www.google.com/maps/place/18%C2%B047'04.8%22N+78%C2%B055'09.7%22E/@18.784665,78.9167941,17z";
 
   return (
@@ -319,7 +324,7 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
                 </div>
                 <div className="col-span-1 text-center font-bold text-slate-400">:</div>
                 <div className="col-span-7 font-bold text-slate-800 italic">
-                  {donation.amountInWords}
+                  {donation.amountInWords || amountInWords(rawAmt)}
                 </div>
               </div>
 
