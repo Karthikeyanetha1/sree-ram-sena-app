@@ -155,8 +155,12 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
           <div className="border-[6px] border-double border-emerald-800 rounded-3xl p-5 sm:p-6 bg-gradient-to-b from-amber-50/40 via-white to-emerald-50/30 relative shadow-inner overflow-hidden">
             
             {/* SACRED LORD GANESHA WATERMARK OVERLAY */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 select-none z-0">
-              <span className="text-[170px] leading-none text-amber-900 font-serif transform -rotate-12">🐘</span>
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-15 select-none z-0 overflow-hidden">
+              <img 
+                src="/assets/ganesha_watermark.png" 
+                alt="Lord Ganesha Watermark" 
+                className="w-72 sm:w-80 h-auto object-contain filter mix-blend-multiply opacity-80"
+              />
             </div>
             
             {/* Top Mantra Banner */}
@@ -167,12 +171,15 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
             </div>
 
             {/* TOP SECTION: SREE RAM SENA LOGO + GANESHA ARTWORK */}
-            <div className="flex items-center justify-between pb-4 border-b-2 border-emerald-800/30 gap-2">
+            <div className="flex items-center justify-between pb-4 border-b-2 border-emerald-800/30 gap-2 relative z-10">
               
-              {/* Left Temple Seal Emblem */}
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-emerald-800 p-1 flex flex-col items-center justify-center text-center bg-white shadow-sm flex-shrink-0">
-                <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-800" />
-                <span className="text-[8px] font-extrabold text-emerald-950 mt-0.5">Est. {committeeInfo.since || '2016'}</span>
+              {/* Left Official Gold Emblem Logo */}
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-amber-400 p-0.5 flex items-center justify-center bg-black shadow-md flex-shrink-0 overflow-hidden">
+                <img 
+                  src="/assets/sree_ram_sena_logo.jpg" 
+                  alt="SREE RAM SENA YOUTH GOVINDUPALLY" 
+                  className="w-full h-full object-cover rounded-full"
+                />
               </div>
 
               {/* Center Title */}
