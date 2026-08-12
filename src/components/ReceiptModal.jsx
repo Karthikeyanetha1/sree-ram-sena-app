@@ -141,8 +141,8 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
   const locationUrl = committeeInfo.locationMapsUrl || "https://www.google.com/maps/place/18%C2%B047'04.8%22N+78%C2%B055'09.7%22E/@18.784665,78.9167941,17z";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto animate-in fade-in">
-      <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-emerald-100 overflow-hidden my-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/85 backdrop-blur-md p-2 sm:p-6 flex justify-center items-start min-h-screen animate-in fade-in py-4 sm:py-8">
+      <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-emerald-100 overflow-hidden my-auto">
         
         {/* Modal Top Navigation Bar with Back to Dashboard Button */}
         <div className="bg-slate-900 px-4 sm:px-6 py-3 text-white flex items-center justify-between no-print">
