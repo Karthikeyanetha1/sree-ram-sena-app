@@ -32,7 +32,7 @@ import {
 } from 'recharts';
 
 export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice, onViewReceipt, onOpenOcr, onOpenLogin, onOpenWizard }) => {
-  const { t, donations, expenses, committeeInfo, role, currentUser } = useApp();
+  const { t, donations, expenses, committeeInfo, role, currentUser, countdown, selectedYear } = useApp();
 
   const safeDonations = Array.isArray(donations) ? donations : [];
   const safeExpenses = Array.isArray(expenses) ? expenses : [];
@@ -96,18 +96,19 @@ export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice
             </p>
           </div>
 
-          {/* Vinayaka Chaturthi Countdown Card */}
-          <div className="bg-white/15 backdrop-blur-md border border-white/20 p-4 rounded-2xl flex items-center space-x-4 min-w-[240px]">
-            <div className="w-12 h-12 rounded-xl bg-amber-400 text-emerald-950 flex items-center justify-center font-black text-2xl shadow-md">
+          {/* Vinayaka Chaturthi Dynamic Automated Countdown Card */}
+          <div className="bg-white/15 backdrop-blur-md border border-white/20 p-4 rounded-2xl flex items-center space-x-4 min-w-[260px]">
+            <div className="w-12 h-12 rounded-xl bg-amber-400 text-emerald-950 flex items-center justify-center font-black text-2xl shadow-md flex-shrink-0">
               🐘
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-amber-200 block">
-                Vinayaka Chaturthi Countdown
+              <span className="text-[10px] uppercase font-bold text-amber-200 block tracking-wider">
+                Vinayaka Chavithi {selectedYear || '2026'} Countdown
               </span>
-              <div className="flex items-baseline space-x-1">
-                <span className="text-2xl font-black text-white">{committeeInfo.daysRemaining || 44}</span>
-                <span className="text-xs font-bold text-emerald-100">{t.daysLeft}</span>
+              <div className="flex items-baseline space-x-1.5 mt-0.5">
+                <span className="text-2xl font-black text-white">{countdown?.days ?? 0}</span>
+                <span className="text-xs font-bold text-amber-300">Days</span>
+                <span className="text-xs font-bold text-white/80">• {String(countdown?.hours ?? 0).padStart(2, '0')}h {String(countdown?.minutes ?? 0).padStart(2, '0')}m</span>
               </div>
             </div>
           </div>
@@ -131,7 +132,7 @@ export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice
 
         <div className="p-4 bg-white rounded-2xl border border-emerald-200 shadow-xs text-xs font-semibold text-slate-800 leading-relaxed">
           <p className="text-sm font-extrabold text-slate-900 mb-1">
-            "Today's collection is ₹{todaysCollection.toLocaleString('en-IN')}. Expenses are ₹{todaysExpenses.toLocaleString('en-IN')}. Net balance is ₹{netBalanceAmount.toLocaleString('en-IN')}. Festival countdown: {committeeInfo.daysRemaining || 44} days remaining."
+            "Today's collection is ₹{todaysCollection.toLocaleString('en-IN')}. Expenses are ₹{todaysExpenses.toLocaleString('en-IN')}. Net balance is ₹{netBalanceAmount.toLocaleString('en-IN')}. Festival countdown: {countdown?.days ?? 0} days remaining."
           </p>
           <span className="text-[11px] text-emerald-700 font-bold block mt-1">
             ✓ Ready for fresh Vinayaka Chaturthi Pandal & Annadhanam Seva prep.

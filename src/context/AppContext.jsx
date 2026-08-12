@@ -459,7 +459,7 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
-  // STEP 8: Global Festival Year Switcher State (stored as non-sensitive UI preference)
+  // STEP 8: Global Festival Year Switcher State
   const [selectedYear, setSelectedYearState] = useState(() => {
     return localStorage.getItem('srs_selected_year') || '2026';
   });
@@ -471,6 +471,44 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('srs_selected_year', cleanYear);
     logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', `Switched Active Festival Year to ${cleanYear}`, { year: cleanYear });
   };
+
+  // DYNAMIC AUTOMATED FESTIVAL COUNTDOWN ENGINE (Calculated from selectedYear & current time)
+  const getFestivalTargetDate = (yearStr) => {
+    const year = parseInt(yearStr) || 2026;
+    const dates = {
+      '2025': '2025-09-27T00:00:00+05:30',
+      '2026': '2026-09-14T00:00:00+05:30',
+      '2027': '2027-09-04T00:00:00+05:30',
+      '2028': '2028-08-23T00:00:00+05:30'
+    };
+    return new Date(dates[yearStr] || `${year}-09-14T00:00:00+05:30`);
+  };
+
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, isPast: false });
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const target = getFestivalTargetDate(selectedYear);
+      const now = new Date();
+      const diffMs = target - now;
+
+      if (diffMs <= 0) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true });
+        return;
+      }
+
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+      setCountdown({ days, hours, minutes, seconds, isPast: false });
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [selectedYear]);
 
   // STEP 9: Committee Management State (Position & Name only)
   const [committeeMembers, setCommitteeMembers] = useState([]);
@@ -809,6 +847,7 @@ export const AppProvider = ({ children }) => {
       setLang,
       selectedYear,
       setSelectedYear,
+      countdown,
       isAuthInitializing,
       authStatusText,
       role,
