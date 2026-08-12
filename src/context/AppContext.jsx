@@ -121,135 +121,242 @@ export const AppProvider = ({ children }) => {
 
   // Public Registration Handler (Collectors & Viewers Only - Pending Approval Required)
   const registerUser = async (name, email, password, requestedRole) => {
-    // Restrict public registration to Collector or Viewer ONLY
     const safeRole = (requestedRole === 'Collector' || requestedRole === 'collector') ? 'Collector' : 'Viewer';
+    const cleanEmail = (email || '').toLowerCase().trim();
+    const cleanName = (name || '').trim();
 
+    let newUid = null;
     try {
-      if (email && email.includes('@')) {
-        await createUserWithEmailAndPassword(auth, email, password || 'sreeram2026');
-        // Crucial Security Fix: Immediately sign out so new signups require Super Admin approval before logging in
-        await firebaseSignOut(auth);
+      if (cleanEmail && cleanEmail.includes('@')) {
+        const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password || 'sreeram2026');
+        newUid = cred.user.uid;
       }
     } catch (err) {
       console.warn("Firebase Auth Register Note:", err.message);
     }
 
-    // Ensure client auth state is NOT logged in for unapproved new users
-    setIsAuthenticatedState(false);
-    localStorage.setItem('srs_authenticated', 'false');
-    localStorage.removeItem('srs_current_user');
-    setRoleState('Viewer');
+    const docId = newUid || `user_${Date.now()}`;
+    const userDocData = {
+      uid: newUid || '',
+      name: cleanName,
+      fullName: cleanName,
+      'Full name': cleanName,
+      email: cleanEmail,
+      Email: cleanEmail,
+      role: safeRole,
+      Role: safeRole,
+      approved: false,
+      Approved: false,
+      active: true,
+      Active: true,
+      status: 'Pending Approval',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
 
-    // Save to Firestore via /api/register-user serverless function
     try {
-      await fetch('/api/register-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, role: safeRole })
-      });
+      await setDoc(doc(db, "users", docId), userDocData, { merge: true });
+      console.log(`✓ Created pending ${safeRole} profile document in Firestore users/${docId}`);
     } catch (e) {
-      console.warn("Serverless user registration note:", e.message);
+      console.warn("Firestore user document write error:", e.message);
     }
 
+    try {
+      await firebaseSignOut(auth);
+    } catch (soErr) {}
+
+    setAuthStatus('UNAUTHENTICATED');
+    setIsAuthenticatedState(false);
+    setIsApproved(false);
+    setIsActive(false);
+    setRoleState('');
+    setCurrentUserState(null);
+
     const newUser = {
-      id: String(Date.now()),
-      name,
-      email: email.toLowerCase(),
+      id: docId,
+      uid: newUid,
+      name: cleanName,
+      email: cleanEmail,
       role: safeRole,
       status: 'Pending Approval',
       createdAt: new Date().toLocaleDateString('en-IN')
     };
-    const updated = [newUser, ...registeredUsers];
-    setRegisteredUsers(updated);
-    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
-    logAction(name, safeRole, 'User Registration Submitted (Pending Super Admin Approval)', { email });
+    logAction(cleanName, safeRole, 'User Registration Submitted (Pending Super Admin Approval)', { email: cleanEmail });
     return newUser;
   };
 
   // Official Super Admin Account Creation (Admin Portal Only)
   const createSuperAdminAccount = async (name, email, password) => {
+    const cleanEmail = (email || '').toLowerCase().trim();
+    const cleanName = (name || '').trim();
+
+    let newUid = null;
     try {
-      if (email && email.includes('@')) {
-        await createUserWithEmailAndPassword(auth, email, password);
+      if (cleanEmail && cleanEmail.includes('@')) {
+        const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        newUid = cred.user.uid;
       }
     } catch (err) {
       console.warn("Firebase Auth Super Admin Register Note:", err.message);
     }
 
+    const docId = newUid || `admin_${Date.now()}`;
+    const adminDocData = {
+      uid: newUid || '',
+      name: cleanName,
+      fullName: cleanName,
+      'Full name': cleanName,
+      email: cleanEmail,
+      Email: cleanEmail,
+      role: 'Super Admin',
+      Role: 'Super Admin',
+      approved: true,
+      Approved: true,
+      active: true,
+      Active: true,
+      status: 'Approved',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
     try {
-      await addDoc(collection(db, "users"), {
-        "Full name": name,
-        "Email": email.toLowerCase(),
-        "Role": "Super Admin",
-        "Approved": true,
-        "Active": true,
-        "status": "Approved",
-        "createdAt": serverTimestamp()
-      });
+      await setDoc(doc(db, "users", docId), adminDocData, { merge: true });
+      console.log(`✓ Created Super Admin profile document in Firestore users/${docId}`);
     } catch (e) {
-      console.warn("Firestore Super Admin document note:", e.message);
+      console.warn("Firestore Super Admin document write error:", e.message);
     }
 
     const newUser = {
-      id: String(Date.now()),
-      name,
-      email: email.toLowerCase(),
+      id: docId,
+      uid: newUid,
+      name: cleanName,
+      email: cleanEmail,
       role: 'Super Admin',
       status: 'Approved',
       createdAt: new Date().toLocaleDateString('en-IN')
     };
-    const updated = [newUser, ...registeredUsers];
-    setRegisteredUsers(updated);
-    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
-    logAction(currentUser?.name || 'Super Admin', 'Super Admin', 'Official Super Admin Account Created in Firebase Auth & Firestore', { email });
+    logAction(currentUser?.name || 'Super Admin', 'Super Admin', 'Official Super Admin Account Created in Firebase Auth & Firestore', { email: cleanEmail });
     return newUser;
   };
 
   const approveUser = async (userId) => {
-    const target = registeredUsers.find(u => u.id === userId);
+    console.log(`[APPROVE] Approving user account (ID: ${userId})...`);
+    
+    const target = registeredUsers.find(u => u.id === userId || u.uid === userId);
+    const targetEmail = target?.email ? target.email.toLowerCase().trim() : '';
 
-    // Update Firestore if email matches
-    if (target && target.email) {
-      try {
-        const q = query(collection(db, "users"));
-        const snapshot = await getDocs(q);
-        for (const docSnap of snapshot.docs) {
+    try {
+      const directDocRef = doc(db, "users", userId);
+      const directDocSnap = await getDoc(directDocRef);
+      if (directDocSnap.exists()) {
+        await updateDoc(directDocRef, {
+          approved: true,
+          Approved: true,
+          active: true,
+          Active: true,
+          status: 'Approved',
+          updatedAt: serverTimestamp()
+        });
+        console.log(`✓ Approved user doc directly by ID: ${userId}`);
+      } else {
+        const snap = await getDocs(collection(db, "users"));
+        let updatedCount = 0;
+        for (const docSnap of snap.docs) {
           const d = docSnap.data();
-          if ((d.Email && d.Email.toLowerCase() === target.email.toLowerCase()) || (d.email && d.email.toLowerCase() === target.email.toLowerCase())) {
-            await updateDoc(doc(db, "users", docSnap.id), { Approved: true, status: 'Approved' });
+          const dEmail = (d.Email || d.email || '').toLowerCase().trim();
+          if ((targetEmail && dEmail === targetEmail) || d.uid === userId || docSnap.id === userId) {
+            await updateDoc(doc(db, "users", docSnap.id), {
+              approved: true,
+              Approved: true,
+              active: true,
+              Active: true,
+              status: 'Approved',
+              updatedAt: serverTimestamp()
+            });
+            updatedCount++;
+            console.log(`✓ Approved user doc in Firestore: ${docSnap.id}`);
           }
         }
-      } catch (err) {
-        console.warn("Firestore approval update error:", err.message);
-        throw new Error(`Failed to approve user in Firestore: ${err.message}`);
+        if (updatedCount === 0 && targetEmail) {
+          await setDoc(doc(db, "users", userId), {
+            name: target?.name || 'User',
+            fullName: target?.name || 'User',
+            email: targetEmail,
+            role: target?.role || 'Collector',
+            approved: true,
+            Approved: true,
+            active: true,
+            Active: true,
+            status: 'Approved',
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        }
       }
+    } catch (err) {
+      console.warn("Firestore approval error:", err.message);
     }
 
-    const updated = registeredUsers.map(u => u.id === userId ? { ...u, status: 'Approved' } : u);
-    setRegisteredUsers(updated);
-    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
-
-    logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', 'Approved User Account', { userId, email: target?.email });
+    logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', 'Approved User Account', { userId, email: targetEmail });
   };
 
-  const rejectUser = (userId) => {
-    const updated = registeredUsers.filter(u => u.id !== userId);
-    setRegisteredUsers(updated);
-    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+  const rejectUser = async (userId) => {
+    const target = registeredUsers.find(u => u.id === userId || u.uid === userId);
+    const targetEmail = target?.email ? target.email.toLowerCase().trim() : '';
+
+    try {
+      const snap = await getDocs(collection(db, "users"));
+      for (const docSnap of snap.docs) {
+        const d = docSnap.data();
+        const dEmail = (d.Email || d.email || '').toLowerCase().trim();
+        if ((targetEmail && dEmail === targetEmail) || d.uid === userId || docSnap.id === userId) {
+          await updateDoc(doc(db, "users", docSnap.id), {
+            approved: false,
+            Approved: false,
+            active: false,
+            Active: false,
+            status: 'Rejected',
+            updatedAt: serverTimestamp()
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Firestore reject error:", err.message);
+    }
+
     logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', 'Rejected User Account', { userId });
   };
 
-  const updateUserStatus = (userId, newStatus) => {
-    const updated = registeredUsers.map(u => u.id === userId ? { ...u, status: newStatus } : u);
-    setRegisteredUsers(updated);
-    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+  const updateUserStatus = async (userId, newStatus) => {
+    const isAppr = newStatus === 'Approved';
+    const isAct = newStatus === 'Approved' || newStatus === 'Active';
+
+    try {
+      const snap = await getDocs(collection(db, "users"));
+      for (const docSnap of snap.docs) {
+        if (docSnap.id === userId || docSnap.data().uid === userId) {
+          await updateDoc(doc(db, "users", docSnap.id), {
+            approved: isAppr,
+            Approved: isAppr,
+            active: isAct,
+            Active: isAct,
+            status: newStatus,
+            updatedAt: serverTimestamp()
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Firestore status update error:", err.message);
+    }
+
     logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', `Updated Account Status to ${newStatus}`, { userId });
   };
 
-  const deleteUserAccount = (userId) => {
-    const updated = registeredUsers.filter(u => u.id !== userId);
-    setRegisteredUsers(updated);
-    localStorage.setItem('srs_registered_users', JSON.stringify(updated));
+  const deleteUserAccount = async (userId) => {
+    try {
+      await deleteDoc(doc(db, "users", userId));
+    } catch (err) {
+      console.warn("Firestore delete user error:", err.message);
+    }
     logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', 'Deleted User Account', { userId });
   };
 
@@ -350,9 +457,15 @@ export const AppProvider = ({ children }) => {
         }
 
         // Profile doc exists in Firestore! Read claims strictly from DB properties.
-        const dbApproved = foundDoc.approved === true || foundDoc.Approved === true || foundDoc.status === 'Approved';
-        const dbActive = foundDoc.active === true || foundDoc.Active === true || (foundDoc.status !== 'Disabled' && foundDoc.status !== 'Inactive' && foundDoc.status !== 'Pending Approval');
-        const dbRole = foundDoc.role || foundDoc.Role || 'Viewer';
+        const dbApproved = foundDoc.approved === true || foundDoc.Approved === true || foundDoc.Approved === 'True' || foundDoc.status === 'Approved';
+        const dbActive = foundDoc.active !== false && foundDoc.Active !== false && foundDoc.status !== 'Disabled' && foundDoc.status !== 'Inactive';
+
+        const rawRole = String(foundDoc.role || foundDoc.Role || 'Viewer').trim();
+        let dbRole = 'Viewer';
+        if (rawRole.toLowerCase().includes('admin')) dbRole = 'Super Admin';
+        else if (rawRole.toLowerCase().includes('collector')) dbRole = 'Collector';
+        else dbRole = 'Viewer';
+
         const dbName = foundDoc['Full name'] || foundDoc.fullName || foundDoc.name || cleanEmail.split('@')[0];
 
         setAuthStatus('AUTHENTICATED');
