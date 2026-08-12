@@ -9,7 +9,13 @@ import {
   Share2, 
   Search, 
   CheckCircle2, 
-  MapPin
+  MapPin,
+  User,
+  Phone,
+  IndianRupee,
+  CreditCard,
+  FileText,
+  ExternalLink
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -289,107 +295,239 @@ ${cleanUrl}`;
               </div>
             </div>
 
-            {/* PRINTABLE RECEIPT CARD */}
+            {/* PRINTABLE RECEIPT CARD - GRAND DOUBLE GOLD & EMERALD BORDER FORMAT */}
             <div 
               id="public-receipt-card"
-              className="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl border-4 border-amber-400/80 relative overflow-hidden space-y-6"
+              className="bg-white text-slate-900 rounded-3xl p-5 sm:p-6 shadow-2xl border-[6px] border-double border-emerald-800 relative overflow-hidden bg-gradient-to-b from-amber-50/40 via-white to-emerald-50/30"
             >
-              {/* Marigold Decorative Top Border */}
-              <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500" />
+              {/* Top Sacred Mantra Banner */}
+              <div className="text-center mb-3">
+                <span className="inline-block bg-amber-100 text-amber-900 px-4 py-0.5 rounded-full text-xs font-extrabold tracking-widest border border-amber-300 shadow-xs">
+                  ॥ శ్రీ గణేశాయ నమః ॥
+                </span>
+              </div>
 
-              {/* Receipt Header & Artwork */}
-              <div className="flex items-start justify-between border-b border-amber-200 pb-5">
-                <div className="flex items-center space-x-3">
-                  <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-3xl shadow-lg border-2 border-amber-300">
-                    🌺
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-800 block">
-                      SREE RAM SENA • VINAYAKA CHAVITHI 2026
-                    </span>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-serif">
-                      Official Seva Receipt
-                    </h2>
-                    <p className="text-xs font-bold text-slate-600">Govindhupalli, Jagtial, Telangana</p>
-                  </div>
+              {/* TOP SECTION: SREE RAM SENA LOGO + GANESHA ARTWORK */}
+              <div className="flex items-center justify-between pb-4 border-b-2 border-emerald-800/30 gap-2">
+                
+                {/* Left Temple Seal Emblem */}
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-emerald-800 p-1 flex flex-col items-center justify-center text-center bg-white shadow-sm flex-shrink-0">
+                  <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-800" />
+                  <span className="text-[8px] font-extrabold text-emerald-950 mt-0.5">Est. 2016</span>
                 </div>
 
-                <div className="text-right">
-                  <span className="bg-amber-100 text-amber-950 text-xs font-black px-3 py-1 rounded-full border border-amber-300 inline-block font-mono">
+                {/* Center Title */}
+                <div className="text-center flex-1">
+                  <h2 className="text-lg sm:text-2xl font-black text-emerald-950 tracking-tight uppercase leading-tight font-serif">
+                    SREE RAM SENA
+                  </h2>
+                  <h3 className="text-xs sm:text-sm font-extrabold text-amber-700 tracking-wider uppercase mt-0.5">
+                    VINAYAKA CHAVITHI 2026
+                  </h3>
+                  <span className="text-[9px] sm:text-[10px] font-extrabold text-emerald-800 tracking-widest uppercase block mt-0.5 bg-emerald-100/80 px-2.5 py-0.5 rounded-full inline-block">
+                    VINAYAKA CHAVITHI DONATION RECEIPT
+                  </span>
+                </div>
+
+                {/* Right Lord Ganesha SVG Artwork */}
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-amber-400 to-amber-100 p-1.5 flex items-center justify-center shadow-md flex-shrink-0 border border-amber-400">
+                  <svg className="w-10 h-10 sm:w-12 sm:h-12 text-amber-900 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 2L9.5 5H14.5L12 2Z" fill="#d97706"/>
+                    <path d="M12 6C9.24 6 7 8.24 7 11C7 13.76 9.24 16 12 16C14.76 16 17 13.76 17 11C17 8.24 14.76 6 12 6ZM12 14C10.34 14 9 12.66 9 11C9 9.34 10.34 8 12 8C13.66 8 15 9.34 15 11C15 12.66 13.66 14 12 14Z"/>
+                    <path d="M5 12C3.9 12 3 12.9 3 14C3 15.1 3.9 16 5 16H6.18C6.06 15.36 6 14.69 6 14C6 13.31 6.06 12.64 6.18 12H5Z"/>
+                    <path d="M19 12H17.82C17.94 12.64 18 13.31 18 14C18 14.69 17.94 15.36 17.82 16H19C20.1 16 21 15.1 21 14C21 12.9 20.1 12 19 12Z"/>
+                  </svg>
+                </div>
+
+              </div>
+
+              {/* RECEIPT NUMBER BADGE */}
+              <div className="my-4 text-center">
+                <div className="inline-block bg-gradient-to-r from-emerald-950 via-emerald-800 to-emerald-950 text-white px-6 sm:px-7 py-2 rounded-2xl shadow-lg border-2 border-amber-400/60 ring-2 ring-emerald-900/20">
+                  <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-amber-300 mr-2">
+                    RECEIPT NO:
+                  </span>
+                  <span className="text-base sm:text-lg font-black font-mono tracking-wider text-white">
                     {receipt?.receiptNo}
                   </span>
-                  <p className="text-[10px] font-bold text-slate-500 mt-1">Date: {receipt?.date || '2026'}</p>
+                </div>
+
+                <div className="mt-2 text-xs font-bold text-slate-600 flex items-center justify-center space-x-1">
+                  <span>📅 Date & Time: </span>
+                  <span>{receipt?.date || '2026-08-12'}</span>
                 </div>
               </div>
 
-              {/* Main Receipt Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-amber-50/50 p-4 sm:p-5 rounded-2xl border border-amber-200/80">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Devotee / Donor Name</span>
-                  <h3 className="text-lg font-black text-slate-900 mt-0.5">{receipt?.donorName}</h3>
-                  {receipt?.village && (
-                    <span className="text-xs font-bold text-slate-600 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3 text-amber-600" />
-                      <span>{receipt.village}</span>
-                    </span>
-                  )}
+              {/* CENTER DETAILS TABLE */}
+              <div className="bg-white/90 rounded-2xl p-4 border border-emerald-200/80 shadow-xs space-y-2.5 text-xs font-semibold text-slate-800">
+                
+                <div className="grid grid-cols-12 items-baseline py-1 border-b border-slate-100">
+                  <div className="col-span-4 text-slate-500 font-bold flex items-center space-x-1.5">
+                    <User className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>DONOR NAME</span>
+                  </div>
+                  <div className="col-span-1 text-center font-bold text-slate-400">:</div>
+                  <div className="col-span-7 font-extrabold text-slate-900 text-sm">
+                    {receipt?.donorName}
+                  </div>
                 </div>
 
-                <div className="sm:text-right">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Donation Amount</span>
-                  <div className="text-2xl sm:text-3xl font-black text-emerald-800 mt-0.5 font-mono">
+                <div className="grid grid-cols-12 items-baseline py-1 border-b border-slate-100">
+                  <div className="col-span-4 text-slate-500 font-bold flex items-center space-x-1.5">
+                    <Phone className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>MOBILE NUMBER</span>
+                  </div>
+                  <div className="col-span-1 text-center font-bold text-slate-400">:</div>
+                  <div className="col-span-7 font-bold text-slate-800">
+                    {receipt?.mobile || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-12 items-baseline py-1 border-b border-slate-100">
+                  <div className="col-span-4 text-slate-500 font-bold flex items-center space-x-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>ADDRESS</span>
+                  </div>
+                  <div className="col-span-1 text-center font-bold text-slate-400">:</div>
+                  <div className="col-span-7 font-bold text-slate-800">
+                    {receipt?.village || 'Govindhupalli'} {receipt?.address ? `(${receipt.address})` : ''}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-12 items-center py-1.5 bg-emerald-50/80 rounded-xl px-2 border border-emerald-200">
+                  <div className="col-span-4 text-emerald-900 font-extrabold flex items-center space-x-1.5">
+                    <IndianRupee className="w-4 h-4 text-emerald-700" />
+                    <span>AMOUNT</span>
+                  </div>
+                  <div className="col-span-1 text-center font-bold text-emerald-800">:</div>
+                  <div className="col-span-7 font-black text-xl sm:text-2xl text-emerald-950">
                     ₹ {parseFloat(receipt?.amount || 0).toLocaleString('en-IN')}/-
                   </div>
-                  <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md inline-block mt-1">
-                    Payment Method: {receipt?.paymentMethod || 'UPI'}
-                  </span>
                 </div>
 
-                <div className="sm:col-span-2 pt-2 border-t border-amber-200/60">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Amount in Words</span>
-                  <p className="text-xs font-black text-slate-800 italic mt-0.5">
-                    {numberToWords(parseFloat(receipt?.amount || 0))}
-                  </p>
-                </div>
-
-                {receipt?.collector && (
-                  <div className="sm:col-span-2 pt-2 border-t border-amber-200/60 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Collector / Receipt Officer</span>
-                      <p className="text-xs font-black text-amber-950 mt-0.5">🤝 {receipt.collector}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-300">
-                        Status: SUCCESSFUL ✓
-                      </span>
-                    </div>
+                <div className="grid grid-cols-12 items-baseline py-1 border-b border-slate-100">
+                  <div className="col-span-4 text-slate-500 font-bold flex items-center space-x-1.5">
+                    <FileText className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>AMOUNT IN WORDS</span>
                   </div>
-                )}
+                  <div className="col-span-1 text-center font-bold text-slate-400">:</div>
+                  <div className="col-span-7 font-bold text-slate-800 italic">
+                    {numberToWords(parseFloat(receipt?.amount || 0))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-12 items-baseline py-1 border-b border-slate-100">
+                  <div className="col-span-4 text-slate-500 font-bold flex items-center space-x-1.5">
+                    <CreditCard className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>PAYMENT METHOD</span>
+                  </div>
+                  <div className="col-span-1 text-center font-bold text-slate-400">:</div>
+                  <div className="col-span-7 font-extrabold text-slate-900">
+                    {receipt?.paymentMethod || 'UPI'}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-12 items-baseline py-1 border-b border-slate-100">
+                  <div className="col-span-4 text-slate-500 font-bold flex items-center space-x-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>PAYMENT STATUS</span>
+                  </div>
+                  <div className="col-span-1 text-center font-bold text-slate-400">:</div>
+                  <div className="col-span-7 font-extrabold text-emerald-700">
+                    SUCCESSFUL ✓
+                  </div>
+                </div>
+
+                {/* COLLECTOR ENTRY BLOCK */}
+                <div className="grid grid-cols-12 items-baseline py-1">
+                  <div className="col-span-4 text-slate-500 font-bold flex items-center space-x-1.5">
+                    <User className="w-3.5 h-3.5 text-amber-600" />
+                    <span>COLLECTOR</span>
+                  </div>
+                  <div className="col-span-1 text-center font-bold text-slate-400">:</div>
+                  <div className="col-span-7 font-extrabold text-amber-900 bg-amber-50/80 px-2 py-0.5 rounded-md border border-amber-200/60 inline-block">
+                    {receipt?.collectorName || receipt?.collector || 'Gurram Karthikeya'}
+                  </div>
+                </div>
+
               </div>
 
-              {/* QR Code Verification Footer */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-                    <QRCodeSVG value={currentUrl} size={70} />
+              {/* CLICKABLE & SCANNABLE DUAL QR CODE LAYOUT */}
+              <div className="mt-4 pt-3 border-t-2 border-emerald-800/30 grid grid-cols-2 gap-3 items-center text-center">
+                
+                {/* 1. UPI PAYMENT QR CODE */}
+                <a 
+                  href={`upi://pay?pa=karthikeyanetha@slc&pn=SREE%20RAM%20SENA&am=${receipt?.amount || 0}&cu=INR`} 
+                  className="bg-white p-2 rounded-2xl border border-emerald-300 shadow-xs flex flex-col items-center justify-center hover:scale-105 transition cursor-pointer"
+                  title="Scan with Camera OR Click to Pay via UPI"
+                >
+                  <div className="w-20 h-20 bg-white p-1 rounded-xl border border-slate-200 flex items-center justify-center shadow-xs">
+                    <QRCodeSVG 
+                      value={`upi://pay?pa=karthikeyanetha@slc&pn=SREE%20RAM%20SENA&am=${receipt?.amount || 0}&cu=INR`}
+                      size={72}
+                      bgColor="#ffffff"
+                      fgColor="#022c22"
+                      level="H"
+                      includeMargin={false}
+                    />
                   </div>
-                  <div>
-                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider block">
-                      Cryptographic Authenticity
-                    </span>
-                    <p className="text-[10px] text-slate-500 max-w-xs">
-                      Scan QR code or open permanent link to verify authenticity on SREE RAM SENA ledger.
-                    </p>
-                  </div>
-                </div>
+                  <span className="text-[9px] font-black text-emerald-950 block mt-1 uppercase tracking-wide flex items-center gap-0.5">
+                    Scan or Tap to Pay <ExternalLink className="w-2.5 h-2.5 text-emerald-600" />
+                  </span>
+                  <span className="text-[8px] font-mono font-bold text-emerald-800 block truncate max-w-[120px]">
+                    karthikeyanetha@slc
+                  </span>
+                </a>
 
-                <div className="text-center sm:text-right">
-                  <div className="inline-flex items-center space-x-1 bg-emerald-100 text-emerald-950 px-3 py-1 rounded-full text-xs font-black border border-emerald-300">
-                    <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                    <span>Verified Genuine</span>
+                {/* 2. GOOGLE MAPS LOCATION QR CODE */}
+                <a 
+                  href="https://www.google.com/maps/place/18%C2%B047'04.8%22N+78%C2%B055'09.7%22E/@18.784665,78.9167941,17z" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="bg-white p-2 rounded-2xl border border-emerald-300 shadow-xs flex flex-col items-center justify-center hover:scale-105 transition cursor-pointer"
+                  title="Scan with Camera OR Click to Open Google Maps"
+                >
+                  <div className="w-20 h-20 bg-white p-1 rounded-xl border border-slate-200 flex items-center justify-center shadow-xs">
+                    <QRCodeSVG 
+                      value="https://www.google.com/maps/place/18%C2%B047'04.8%22N+78%C2%B055'09.7%22E/@18.784665,78.9167941,17z"
+                      size={72}
+                      bgColor="#ffffff"
+                      fgColor="#065f46"
+                      level="Q"
+                      includeMargin={false}
+                    />
                   </div>
-                  <p className="text-[9px] text-slate-400 mt-1 font-mono">ID: {receipt?.id || receipt?.receiptNo}</p>
+                  <span className="text-[9px] font-black text-emerald-950 block mt-1 uppercase tracking-wide flex items-center gap-0.5">
+                    Scan or Tap for Maps <ExternalLink className="w-2.5 h-2.5 text-emerald-600" />
+                  </span>
+                  <span className="text-[8px] font-bold text-emerald-800 block">
+                    Pandal Location
+                  </span>
+                </a>
+
+              </div>
+
+              {/* FOOTER */}
+              <div className="mt-4 bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 text-white rounded-2xl p-3 text-center shadow-md border border-emerald-700 space-y-1">
+                <h4 className="text-[11px] font-black text-amber-300 uppercase tracking-wider">
+                  🙏 Thank You for Supporting SREE RAM SENA Vinayaka Chavithi 2026
+                </h4>
+                <p className="text-[10px] font-semibold text-emerald-100 italic">
+                  May Lord Ganesha bless you and your family with Health, Happiness, Prosperity and Success.
+                </p>
+
+                <div className="pt-1.5 border-t border-emerald-800/80 flex flex-wrap items-center justify-center gap-2.5 text-[9px] font-bold text-emerald-200">
+                  <span className="flex items-center gap-1">📞 8688496208</span>
+                  <span className="flex items-center gap-1">📍 Govindhupalli, Jagtial</span>
+                  <span className="flex items-center gap-1">📸 Instagram: @sreeramsena_g.p</span>
                 </div>
+              </div>
+
+              {/* BOTTOM BRANDING */}
+              <div className="text-center mt-2">
+                <span className="text-[9px] font-semibold text-slate-400">
+                  Generated by SREE RAM SENA Divine Manager
+                </span>
               </div>
 
             </div>
