@@ -70,7 +70,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
     return 'Viewer';
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -79,20 +79,25 @@ export const LoginPage = ({ onLoginSuccess }) => {
     setMessage('');
 
     const cleanInput = loginIdentifier.trim().toLowerCase();
+    if (!cleanInput || !loginPassword) {
+      setError('Please enter your email/mobile and password.');
+      return;
+    }
 
-    // 100% Fail-Safe Super Admin Login Handler
-    const adminObj = {
-      name: 'Gurram Karthikeya',
-      email: cleanInput && cleanInput.includes('@') ? cleanInput : 'speedsltns@gmail.com',
-      role: 'Super Admin',
-      status: 'Approved'
-    };
-
-    setRole('Super Admin');
-    setCurrentUser(adminObj);
-    setMessage('Logged in successfully as Gurram Karthikeya (Super Admin)');
-
-    if (onLoginSuccess) onLoginSuccess();
+    try {
+      setMessage('Verifying credentials with Firebase Auth...');
+      await signInWithEmailAndPassword(auth, cleanInput, loginPassword);
+      setMessage('✓ Authenticated successfully! Validating profile authorization claims...');
+      if (onLoginSuccess) onLoginSuccess();
+    } catch (err) {
+      console.warn("Login Auth Error:", err.message);
+      setFailedAttempts(prev => {
+        const next = prev + 1;
+        if (next >= 5) setLockoutTimer(900);
+        return next;
+      });
+      setError('🔒 Invalid Credentials: The email/mobile or password you entered is incorrect. Please check your credentials and try again.');
+    }
   };
 
   const handlePasswordReset = async () => {

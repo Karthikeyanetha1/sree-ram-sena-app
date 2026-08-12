@@ -45,19 +45,8 @@ export const initialCommitteeInfo = {
 export const AppProvider = ({ children }) => {
   const [lang, setLang] = useState('en');
   
-  // Default to Unauthenticated Public Devotee State (Sign In Required for Super Admin / Collector Access)
-  const [isAuthInitializing, setIsAuthInitializing] = useState(true);
-  const [authStatusText, setAuthStatusText] = useState('Initializing Firebase Auth...');
-
-  const [isAuthenticated, setIsAuthenticatedState] = useState(false);
-  const [role, setRoleState] = useState('Viewer');
-
-  const [currentUser, setCurrentUserState] = useState({ 
-    name: 'Public Devotee', 
-    email: '', 
-    role: 'Viewer', 
-    status: 'Approved' 
-  });
+  const [isAuthInitializing, setIsAuthInitializing] = useState(false);
+  const [authStatusText, setAuthStatusText] = useState('');
 
   // Emergency Collector Lock System
   const [emergencyLock, setEmergencyLock] = useState(false);
@@ -290,98 +279,106 @@ export const AppProvider = ({ children }) => {
     logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', 'Signed Out All Active Sessions Across Devices', {});
   };
 
-  // Hardened 12-Point Firebase Auth Listener Pipeline
+  // 3-STATE AUTHENTICATION & AUTHORIZATION PIPELINE (AUTH_LOADING | UNAUTHENTICATED | AUTHENTICATED)
+  const [authStatus, setAuthStatus] = useState('LOADING'); // 'LOADING' | 'UNAUTHENTICATED' | 'AUTHENTICATED'
+  const [isApproved, setIsApproved] = useState(false);
+  const [isActive, setIsActive] = useState(false);
+  const [profileError, setProfileError] = useState(false);
+
+  const [isAuthenticated, setIsAuthenticatedState] = useState(false);
+  const [role, setRoleState] = useState('');
+  const [currentUser, setCurrentUserState] = useState(null);
+
+  // Set browserLocalPersistence explicitly
   useEffect(() => {
-    console.log("[AUTH] Firebase Initialization started. Subscribing to onAuthStateChanged...");
-    setAuthStatusText('Initializing Firebase Auth...');
+    setPersistence(auth, browserLocalPersistence).catch(err => {
+      console.warn("[AUTH] Persistence error:", err.message);
+    });
+  }, []);
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("[AUTH] onAuthStateChanged triggered. User:", user?.email || 'null');
+  // Hardened 3-State Firebase Auth & Firestore UID Authorization Pipeline
+  useEffect(() => {
+    console.log("[AUTH] Subscribing to 3-state onAuthStateChanged...");
 
-      if (user && user.email) {
-        const cleanEmail = user.email.toLowerCase();
-        setAuthStatusText(`Loading Firestore profile for ${cleanEmail}...`);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("[AUTH] Firebase user state changed:", firebaseUser?.email || 'null (UNAUTHENTICATED)');
 
-        try {
+      if (!firebaseUser) {
+        setAuthStatus('UNAUTHENTICATED');
+        setIsAuthenticatedState(false);
+        setIsApproved(false);
+        setIsActive(false);
+        setProfileError(false);
+        setCurrentUserState(null);
+        setRoleState('');
+        return;
+      }
+
+      // Firebase User exists (AUTHENTICATED)
+      try {
+        const cleanEmail = firebaseUser.email ? firebaseUser.email.toLowerCase() : '';
+        let foundDoc = null;
+
+        // 1. Direct UID Document Lookup in Firestore /users/{uid}
+        const userDocSnap = await getDoc(doc(db, "users", firebaseUser.uid));
+        if (userDocSnap.exists()) {
+          foundDoc = { id: userDocSnap.id, ...userDocSnap.data() };
+        } else {
+          // 2. Legacy fallback lookup by UID field or Email in /users collection
           const q = query(collection(db, "users"));
-          // 2.5-second Promise timeout to ensure auth NEVER hangs if Firestore offline or slow
-          const snapshot = await Promise.race([
-            getDocs(q),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore Profile Timeout')), 2500))
-          ]);
-
-          const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-          const foundDoc = docs.find(d => 
+          const snapshot = await getDocs(q);
+          foundDoc = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).find(d => 
+            (d.uid === firebaseUser.uid) ||
             (d.Email && d.Email.toLowerCase() === cleanEmail) || 
             (d.email && d.email.toLowerCase() === cleanEmail)
           );
-
-          if (foundDoc) {
-            const rawRole = foundDoc.Role || foundDoc.role || '';
-            const lowerRole = String(rawRole).toLowerCase();
-            
-            const isSuperAdmin = lowerRole.includes('admin') || lowerRole.includes('super') || cleanEmail.includes('speed') || cleanEmail.includes('karthik') || cleanEmail.includes('netha');
-            const isApproved = foundDoc.Approved === true || foundDoc.approved === true || foundDoc.status === 'Approved' || isSuperAdmin;
-            const isActive = (foundDoc.Active !== false && foundDoc.active !== false && foundDoc.status !== 'Disabled') || isSuperAdmin;
-
-            if (isApproved && isActive) {
-              const assignedRole = isSuperAdmin ? 'Super Admin' : (lowerRole.includes('collector') ? 'Collector' : 'Viewer');
-              const fullName = foundDoc['Full name'] || foundDoc.fullName || foundDoc.name || (isSuperAdmin ? 'Gurram Karthikeya' : cleanEmail.split('@')[0]);
-
-              const userObj = {
-                name: fullName,
-                email: cleanEmail,
-                role: assignedRole,
-                status: 'Approved'
-              };
-
-              console.log(`[AUTH] Profile validated. User: ${fullName}, Role: ${assignedRole}`);
-              setCurrentUserState(userObj);
-              localStorage.setItem('srs_current_user', JSON.stringify(userObj));
-              setRoleState(assignedRole);
-              localStorage.setItem('srs_role', assignedRole);
-              setIsAuthenticatedState(true);
-              localStorage.setItem('srs_authenticated', 'true');
-              setIsAuthInitializing(false);
-              return;
-            } else if (!isSuperAdmin) {
-              console.warn("[AUTH] Account not approved or disabled in Firestore. Signing out.");
-              await firebaseSignOut(auth);
-            }
-          }
-        } catch (err) {
-          console.warn("[AUTH] Firestore profile sync note:", err.message);
         }
 
-        const isSuperAdmin = cleanEmail.includes('admin') || cleanEmail.includes('speed') || cleanEmail.includes('karthik') || cleanEmail.includes('netha');
-        const assignedRole = isSuperAdmin ? 'Super Admin' : (cleanEmail.includes('collector') ? 'Collector' : 'Viewer');
-        const defaultName = isSuperAdmin ? 'Gurram Karthikeya' : user.displayName || user.email.split('@')[0];
+        if (!foundDoc) {
+          console.warn(`[AUTH] Profile missing in Firestore for user ${cleanEmail} (UID: ${firebaseUser.uid})`);
+          setAuthStatus('AUTHENTICATED');
+          setIsAuthenticatedState(true);
+          setProfileError(true);
+          setIsApproved(false);
+          setIsActive(false);
+          setCurrentUserState({ uid: firebaseUser.uid, email: cleanEmail, name: 'Profile Not Found' });
+          setRoleState('');
+          return;
+        }
 
-        const userObj = {
-          name: defaultName,
-          email: user.email,
-          role: assignedRole,
-          status: 'Approved'
-        };
+        // Profile doc exists in Firestore! Read claims strictly from DB properties.
+        const dbApproved = foundDoc.approved === true || foundDoc.Approved === true || foundDoc.status === 'Approved';
+        const dbActive = foundDoc.active === true || foundDoc.Active === true || (foundDoc.status !== 'Disabled' && foundDoc.status !== 'Inactive' && foundDoc.status !== 'Pending Approval');
+        const dbRole = foundDoc.role || foundDoc.Role || 'Viewer';
+        const dbName = foundDoc['Full name'] || foundDoc.fullName || foundDoc.name || cleanEmail.split('@')[0];
 
-        console.log(`[AUTH] Session initialized for ${defaultName} (${assignedRole})`);
-        setCurrentUserState(userObj);
-        localStorage.setItem('srs_current_user', JSON.stringify(userObj));
-        setRoleState(assignedRole);
-        localStorage.setItem('srs_role', assignedRole);
+        setAuthStatus('AUTHENTICATED');
         setIsAuthenticatedState(true);
-        localStorage.setItem('srs_authenticated', 'true');
-      } else {
-        console.log("[AUTH] No active Firebase auth session found. User unauthenticated (Viewer Mode).");
-        setIsAuthenticatedState(false);
-        setRoleState('Viewer');
-        setCurrentUserState({ name: 'Public Devotee', email: '', role: 'Viewer', status: 'Approved' });
-        localStorage.removeItem('srs_current_user');
-        localStorage.setItem('srs_authenticated', 'false');
-        localStorage.setItem('srs_role', 'Viewer');
-      }
+        setProfileError(false);
+        setIsApproved(dbApproved);
+        setIsActive(dbActive);
+        setRoleState(dbRole);
 
-      setIsAuthInitializing(false);
+        setCurrentUserState({
+          uid: firebaseUser.uid,
+          id: foundDoc.id,
+          name: dbName,
+          email: cleanEmail,
+          role: dbRole,
+          approved: dbApproved,
+          active: dbActive,
+          status: dbApproved && dbActive ? 'Approved' : (!dbApproved ? 'Pending Approval' : 'Disabled')
+        });
+
+        console.log(`[AUTH] Verified profile claims for ${dbName}: Role=${dbRole}, Approved=${dbApproved}, Active=${dbActive}`);
+      } catch (err) {
+        console.warn("[AUTH] Error checking user profile doc:", err.message);
+        setAuthStatus('AUTHENTICATED');
+        setIsAuthenticatedState(true);
+        setProfileError(true);
+        setIsApproved(false);
+        setIsActive(false);
+      }
     });
 
     return () => unsubscribe();
@@ -499,7 +496,14 @@ export const AppProvider = ({ children }) => {
   const [sponsors, setSponsors] = useState([]);
 
   // STEP 5: FIRESTORE REAL-TIME LISTENER FOR DONATIONS (festivals/{selectedYear}/donations)
+  const isAuthorized = authStatus === 'AUTHENTICATED' && isApproved && isActive;
+
   useEffect(() => {
+    if (!isAuthorized) {
+      setDonations([]);
+      return;
+    }
+
     const q = query(collection(db, "festivals", selectedYear, "donations"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const liveData = snapshot.docs.map(docSnap => {
@@ -530,10 +534,15 @@ export const AppProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, [selectedYear]);
+  }, [selectedYear, isAuthorized]);
 
   // STEP 5: FIRESTORE REAL-TIME LISTENER FOR EXPENSES (festivals/{selectedYear}/expenses)
   useEffect(() => {
+    if (!isAuthorized) {
+      setExpenses([]);
+      return;
+    }
+
     const q = query(collection(db, "festivals", selectedYear, "expenses"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const liveData = snapshot.docs.map(docSnap => ({
@@ -549,10 +558,15 @@ export const AppProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, [selectedYear]);
+  }, [selectedYear, isAuthorized]);
 
   // STEP 9: FIRESTORE REAL-TIME LISTENER FOR COMMITTEE MEMBERS (festivals/{selectedYear}/committee)
   useEffect(() => {
+    if (!isAuthorized) {
+      setCommitteeMembers([]);
+      return;
+    }
+
     const q = query(collection(db, "festivals", selectedYear, "committee"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const liveData = snapshot.docs.map(docSnap => ({
@@ -565,10 +579,15 @@ export const AppProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, [selectedYear]);
+  }, [selectedYear, isAuthorized]);
 
   // STEP 10: FIRESTORE REAL-TIME LISTENER FOR SPONSORS (festivals/{selectedYear}/sponsors)
   useEffect(() => {
+    if (!isAuthorized) {
+      setSponsors([]);
+      return;
+    }
+
     const q = query(collection(db, "festivals", selectedYear, "sponsors"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const liveData = snapshot.docs.map(docSnap => ({
@@ -581,7 +600,7 @@ export const AppProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, [selectedYear]);
+  }, [selectedYear, isAuthorized]);
 
   // LADDU AUCTION WINNER HISTORY MODULE (NO LIVE BIDDING)
   const previousYear = String(parseInt(selectedYear) - 1);
@@ -590,6 +609,11 @@ export const AppProvider = ({ children }) => {
 
   // Listener for Current Year Laddu Auction (festivals/{selectedYear}/ladduAuction)
   useEffect(() => {
+    if (!isAuthorized) {
+      setLadduAuctionCurrentYear([]);
+      return;
+    }
+
     const colRef = collection(db, "festivals", selectedYear, "ladduAuction");
     const unsubscribe = onSnapshot(colRef, (snapshot) => {
       const liveData = snapshot.docs.map(docSnap => {
@@ -615,10 +639,15 @@ export const AppProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, [selectedYear]);
+  }, [selectedYear, isAuthorized]);
 
   // Listener for Previous Year Laddu Auction (festivals/{previousYear}/ladduAuction)
   useEffect(() => {
+    if (!isAuthorized) {
+      setLadduAuctionPreviousYear([]);
+      return;
+    }
+
     const colRef = collection(db, "festivals", previousYear, "ladduAuction");
     const unsubscribe = onSnapshot(colRef, (snapshot) => {
       const liveData = snapshot.docs.map(docSnap => {
@@ -644,7 +673,7 @@ export const AppProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, [previousYear]);
+  }, [previousYear, isAuthorized]);
 
   // FIRESTORE REAL-TIME LISTENER FOR REGISTERED USERS
   useEffect(() => {
@@ -945,6 +974,10 @@ export const AppProvider = ({ children }) => {
       selectedYear,
       setSelectedYear,
       countdown,
+      authStatus,
+      isApproved,
+      isActive,
+      profileError,
       isAuthInitializing,
       authStatusText,
       role,

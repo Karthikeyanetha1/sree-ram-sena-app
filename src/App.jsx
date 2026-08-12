@@ -33,14 +33,16 @@ import { PublicReceiptPage } from './views/PublicReceiptPage';
 
 const MainAppContent = () => {
   const { 
-    isAuthInitializing, 
-    authStatusText, 
+    authStatus,
+    isApproved,
+    isActive,
+    profileError,
+    signOut,
+    currentUser,
+    role,
     donations, 
     addDonation, 
-    addExpense, 
-    role, 
-    isAuthenticated, 
-    setIsAuthenticatedState 
+    addExpense 
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -75,9 +77,89 @@ const MainAppContent = () => {
 
   const publicReceiptNo = getReceiptNumberFromUrl();
 
-  // Public receipt route check
+  // 1. PUBLIC RECEIPT ROUTE BYPASS (NO LOGIN REQUIRED)
   if (publicReceiptNo) {
     return <PublicReceiptPage initialReceiptNo={publicReceiptNo} />;
+  }
+
+  // 2. AUTH_LOADING STATE
+  if (authStatus === 'LOADING') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white font-sans text-center">
+        <div className="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <h2 className="text-lg font-black tracking-tight uppercase">SREE RAM SENA</h2>
+        <p className="text-xs text-amber-400 font-bold mt-1">Authenticating Divine Manager...</p>
+        <span className="text-[11px] text-slate-500 mt-2">Verifying Firebase Auth session & Firestore profile claims</span>
+      </div>
+    );
+  }
+
+  // 3. UNAUTHENTICATED STATE ➔ RENDER LOGIN PAGE AT ROOT URL /
+  if (authStatus === 'UNAUTHENTICATED') {
+    return <LoginPage />;
+  }
+
+  // 4. AUTHENTICATED BUT PROFILE MISSING
+  if (profileError) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white font-sans text-center">
+        <div className="w-16 h-16 rounded-3xl bg-red-500/20 text-red-400 flex items-center justify-center font-bold text-2xl border border-red-500/30 mb-4">
+          ⚠️
+        </div>
+        <h2 className="text-xl font-black tracking-tight text-white">Account Profile Not Found</h2>
+        <p className="text-xs text-slate-400 max-w-md mt-2">
+          Your Firebase account ({currentUser?.email}) was authenticated, but no corresponding profile document was found in the database. Please contact a Super Admin to provision your user profile.
+        </p>
+        <button
+          onClick={signOut}
+          className="mt-6 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition cursor-pointer"
+        >
+          Sign Out & Return to Login
+        </button>
+      </div>
+    );
+  }
+
+  // 5. AUTHENTICATED BUT PENDING APPROVAL
+  if (!isApproved) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white font-sans text-center">
+        <div className="w-16 h-16 rounded-3xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-2xl border border-amber-500/30 mb-4">
+          ⏳
+        </div>
+        <h2 className="text-xl font-black tracking-tight text-white">Account Pending Approval</h2>
+        <p className="text-xs text-slate-400 max-w-md mt-2">
+          Welcome, {currentUser?.name || currentUser?.email}! Your access request is currently pending Super Admin review. You will be granted access once your account is approved.
+        </p>
+        <button
+          onClick={signOut}
+          className="mt-6 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition cursor-pointer"
+        >
+          Sign Out & Return to Login
+        </button>
+      </div>
+    );
+  }
+
+  // 6. AUTHENTICATED BUT ACCOUNT DISABLED
+  if (!isActive) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white font-sans text-center">
+        <div className="w-16 h-16 rounded-3xl bg-red-500/20 text-red-400 flex items-center justify-center font-bold text-2xl border border-red-500/30 mb-4">
+          🚫
+        </div>
+        <h2 className="text-xl font-black tracking-tight text-white">Account Disabled</h2>
+        <p className="text-xs text-slate-400 max-w-md mt-2">
+          Your account ({currentUser?.email}) has been deactivated by a Super Admin. If you believe this is an error, please contact the festival committee.
+        </p>
+        <button
+          onClick={signOut}
+          className="mt-6 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition cursor-pointer"
+        >
+          Sign Out & Return to Login
+        </button>
+      </div>
+    );
   }
 
   const handleOpenReceipt = (donation) => {
