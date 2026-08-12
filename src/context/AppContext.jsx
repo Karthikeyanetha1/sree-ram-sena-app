@@ -794,6 +794,9 @@ export const AppProvider = ({ children }) => {
     .filter(d => (d.paymentStatus || d.status) === 'Partial')
     .reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
 
+  const totalExpensesAmount = expenses
+    .reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+
   const freshSystemReset = () => {
     setDonations([]);
     setExpenses([]);
