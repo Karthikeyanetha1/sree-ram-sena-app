@@ -163,18 +163,21 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
               />
             </div>
             
-            {/* Top Mantra Banner */}
-            <div className="text-center mb-3">
+            {/* Top ESTD 2016 & Sacred Mantra Banner */}
+            <div className="text-center mb-3 flex flex-wrap items-center justify-center gap-2 relative z-10">
+              <span className="bg-emerald-900 text-amber-300 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-black tracking-widest border border-amber-400 shadow-xs uppercase">
+                ESTD. 2016
+              </span>
               <span className="inline-block bg-amber-100 text-amber-900 px-4 py-0.5 rounded-full text-xs font-extrabold tracking-widest border border-amber-300 shadow-xs">
                 ॥ శ్రీ గణేశాయ నమః ॥
               </span>
             </div>
 
-            {/* TOP SECTION: SREE RAM SENA LOGO + GANESHA ARTWORK */}
-            <div className="flex items-center justify-between pb-4 border-b-2 border-emerald-800/30 gap-2 relative z-10">
+            {/* TOP SECTION: SREE RAM SENA LOGO + LORD GANESHA IDOL LOGO */}
+            <div className="flex items-center justify-between pb-4 border-b-2 border-emerald-800/30 gap-2 sm:gap-3 relative z-10">
               
-              {/* Left Official Gold Emblem Logo */}
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-amber-400 p-0.5 flex items-center justify-center bg-black shadow-md flex-shrink-0 overflow-hidden">
+              {/* Left Official Gold Emblem Logo (ENLARGED) */}
+              <div className="w-16 h-16 sm:w-22 sm:h-22 rounded-full border-2 sm:border-3 border-amber-400 p-0.5 flex items-center justify-center bg-black shadow-lg flex-shrink-0 overflow-hidden">
                 <img 
                   src="/assets/sree_ram_sena_logo.jpg" 
                   alt="SREE RAM SENA YOUTH GOVINDUPALLY" 
@@ -184,25 +187,24 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
 
               {/* Center Title */}
               <div className="text-center flex-1 min-w-0">
-                <h2 className="text-base sm:text-xl font-black text-emerald-950 tracking-tight uppercase leading-tight font-serif break-words max-w-full px-1">
+                <h2 className="text-base sm:text-2xl font-black text-emerald-950 tracking-tight uppercase leading-tight font-serif break-words max-w-full px-1">
                   {committeeInfo.name}
                 </h2>
                 <h3 className="text-xs sm:text-sm font-extrabold text-amber-700 tracking-wider uppercase mt-0.5">
                   VINAYAKA CHAVITHI 2026
                 </h3>
-                <span className="text-[10px] font-extrabold text-emerald-800 tracking-widest uppercase block mt-0.5 bg-emerald-100/80 px-2.5 py-0.5 rounded-full inline-block">
+                <span className="text-[9px] sm:text-[10px] font-extrabold text-emerald-800 tracking-widest uppercase block mt-0.5 bg-emerald-100/80 px-2.5 py-0.5 rounded-full inline-block">
                   VINAYAKA CHAVITHI DONATION RECEIPT
                 </span>
               </div>
 
-              {/* Right Lord Ganesha SVG Artwork */}
-              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 to-amber-100 p-1.5 flex items-center justify-center shadow-md flex-shrink-0 border border-amber-400">
-                <svg className="w-12 h-12 text-amber-900 fill-current" viewBox="0 0 24 24">
-                  <path d="M12 2L9.5 5H14.5L12 2Z" fill="#d97706"/>
-                  <path d="M12 6C9.24 6 7 8.24 7 11C7 13.76 9.24 16 12 16C14.76 16 17 13.76 17 11C17 8.24 14.76 6 12 6ZM12 14C10.34 14 9 12.66 9 11C9 9.34 10.34 8 12 8C13.66 8 15 9.34 15 11C15 12.66 13.66 14 12 14Z"/>
-                  <path d="M5 12C3.9 12 3 12.9 3 14C3 15.1 3.9 16 5 16H6.18C6.06 15.36 6 14.69 6 14C6 13.31 6.06 12.64 6.18 12H5Z"/>
-                  <path d="M19 12H17.82C17.94 12.64 18 13.31 18 14C18 14.69 17.94 15.36 17.82 16H19C20.1 16 21 15.1 21 14C21 12.9 20.1 12 19 12Z"/>
-                </svg>
+              {/* Right Lord Ganesha Idol Photo Logo (ENLARGED) */}
+              <div className="w-16 h-16 sm:w-22 sm:h-22 rounded-full border-2 sm:border-3 border-amber-400 p-0.5 flex items-center justify-center bg-amber-900 shadow-lg flex-shrink-0 overflow-hidden">
+                <img 
+                  src="/assets/right_ganesha_header.jpg" 
+                  alt="Lord Ganesha Seva Idol" 
+                  className="w-full h-full object-cover rounded-full object-top"
+                />
               </div>
 
             </div>
