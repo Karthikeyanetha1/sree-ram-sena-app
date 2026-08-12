@@ -19,7 +19,9 @@ import {
   serverTimestamp, 
   query, 
   where,
-  orderBy 
+  orderBy,
+  runTransaction,
+  setDoc
 } from 'firebase/firestore';
 
 const AppContext = createContext();
@@ -457,20 +459,43 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
-  // FIRESTORE REAL-TIME LISTENER FOR DONATIONS (Preserves cached data)
+  // STEP 8: Global Festival Year Switcher State (stored as non-sensitive UI preference)
+  const [selectedYear, setSelectedYearState] = useState(() => {
+    return localStorage.getItem('srs_selected_year') || '2026';
+  });
+
+  const setSelectedYear = (newYear) => {
+    if (!newYear) return;
+    const cleanYear = String(newYear).trim();
+    setSelectedYearState(cleanYear);
+    localStorage.setItem('srs_selected_year', cleanYear);
+    logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', `Switched Active Festival Year to ${cleanYear}`, { year: cleanYear });
+  };
+
+  // STEP 9: Committee Management State (Position & Name only)
+  const [committeeMembers, setCommitteeMembers] = useState([]);
+  
+  // STEP 10: Simplified Sponsors State (Name & Purpose only)
+  const [sponsors, setSponsors] = useState([]);
+
+  // STEP 5: FIRESTORE REAL-TIME LISTENER FOR DONATIONS (festivals/{selectedYear}/donations)
   useEffect(() => {
-    const q = query(collection(db, "donations"));
+    const q = query(collection(db, "festivals", selectedYear, "donations"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const liveData = snapshot.docs.map(doc => {
-        const d = doc.data();
+      const liveData = snapshot.docs.map(docSnap => {
+        const d = docSnap.data();
+        const amt = parseFloat(d.amount || d.Amount) || 0;
         return {
-          id: doc.id,
+          id: docSnap.id,
           ...d,
-          receiptNo: d.receiptNo || d['Receipt No'] || `SRS-2026-${String(doc.id).slice(-6)}`,
+          receiptNo: d.receiptNo || d['Receipt No'] || `SRS-${selectedYear}-${String(docSnap.id).slice(-6)}`,
           donorName: d.donorName || d['Donor Name'] || d.name || 'Devotee',
-          amount: parseFloat(d.amount || d.Amount) || 0,
+          amount: amt,
+          paymentStatus: d.paymentStatus || d.status || 'Successful',
           paymentMethod: d.paymentMethod || d['Payment Method'] || 'UPI',
-          date: d.date || d.Date || new Date().toLocaleDateString('en-GB')
+          village: d.village || d.Village || 'Govindhupalli',
+          date: d.date || d.Date || new Date().toISOString().split('T')[0],
+          collector: d.collectorName || d.collector || d['Collector'] || 'Gurram Karthikeya'
         };
       }).sort((a, b) => {
         const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
@@ -478,46 +503,74 @@ export const AppProvider = ({ children }) => {
         return timeB - timeA;
       });
 
-      if (liveData.length > 0) {
-        setDonations(liveData);
-        localStorage.setItem('srs_donations', JSON.stringify(liveData));
-      }
+      setDonations(liveData);
+      localStorage.setItem(`srs_donations_${selectedYear}`, JSON.stringify(liveData));
     }, (error) => {
-      console.warn("Firestore live donations listener note:", error.message);
+      console.warn(`Firestore live donations listener note (${selectedYear}):`, error.message);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [selectedYear]);
 
-  // FIRESTORE REAL-TIME LISTENER FOR EXPENSES (Preserves cached data)
+  // STEP 5: FIRESTORE REAL-TIME LISTENER FOR EXPENSES (festivals/{selectedYear}/expenses)
   useEffect(() => {
-    const q = query(collection(db, "expenses"));
+    const q = query(collection(db, "festivals", selectedYear, "expenses"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const liveData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        amount: parseFloat(doc.data().amount || doc.data().Amount) || 0
+      const liveData = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+        amount: parseFloat(docSnap.data().amount || docSnap.data().Amount) || 0
       }));
 
-      if (liveData.length > 0) {
-        setExpenses(liveData);
-        localStorage.setItem('srs_expenses', JSON.stringify(liveData));
-      }
+      setExpenses(liveData);
+      localStorage.setItem(`srs_expenses_${selectedYear}`, JSON.stringify(liveData));
     }, (error) => {
-      console.warn("Firestore live expenses listener note:", error.message);
+      console.warn(`Firestore live expenses listener note (${selectedYear}):`, error.message);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [selectedYear]);
 
-  // FIRESTORE REAL-TIME LISTENER FOR REGISTERED USERS & PENDING APPROVALS
+  // STEP 9: FIRESTORE REAL-TIME LISTENER FOR COMMITTEE MEMBERS (festivals/{selectedYear}/committee)
+  useEffect(() => {
+    const q = query(collection(db, "festivals", selectedYear, "committee"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const liveData = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+      setCommitteeMembers(liveData);
+    }, (error) => {
+      console.warn(`Firestore live committee listener note (${selectedYear}):`, error.message);
+    });
+
+    return () => unsubscribe();
+  }, [selectedYear]);
+
+  // STEP 10: FIRESTORE REAL-TIME LISTENER FOR SPONSORS (festivals/{selectedYear}/sponsors)
+  useEffect(() => {
+    const q = query(collection(db, "festivals", selectedYear, "sponsors"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const liveData = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+      setSponsors(liveData);
+    }, (error) => {
+      console.warn(`Firestore live sponsors listener note (${selectedYear}):`, error.message);
+    });
+
+    return () => unsubscribe();
+  }, [selectedYear]);
+
+  // FIRESTORE REAL-TIME LISTENER FOR REGISTERED USERS
   useEffect(() => {
     const q = query(collection(db, "users"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const liveUsers = snapshot.docs.map(doc => {
-        const d = doc.data();
+      const liveUsers = snapshot.docs.map(docSnap => {
+        const d = docSnap.data();
         return {
-          id: doc.id,
+          id: docSnap.id,
           name: d['Full name'] || d.fullName || d.name || 'User',
           email: d.Email || d.email || '',
           mobile: d.Mobile || d.mobile || '',
@@ -528,7 +581,6 @@ export const AppProvider = ({ children }) => {
       });
       if (liveUsers.length > 0) {
         setRegisteredUsers(liveUsers);
-        localStorage.setItem('srs_registered_users', JSON.stringify(liveUsers));
       }
     }, (error) => {
       console.warn("Firestore live users listener note:", error.message);
@@ -537,46 +589,46 @@ export const AppProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // FIRESTORE REAL-TIME LISTENER FOR LADDU BIDS
-  useEffect(() => {
-    const q = query(collection(db, "ladduBids"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const liveBids = snapshot.docs.map(doc => {
-        const d = doc.data();
-        return {
-          id: doc.id,
-          bidderName: d.bidderName || d.name || 'Bidder',
-          mobile: d.mobile || 'N/A',
-          amount: parseFloat(d.amount) || 0,
-          time: d.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          status: d.status || 'Bidder'
-        };
-      }).sort((a, b) => b.amount - a.amount);
-
-      if (liveBids.length > 0) {
-        liveBids[0].status = 'Leading Bidder 🏆';
-        for (let i = 1; i < liveBids.length; i++) {
-          if (liveBids[i].status === 'Leading Bidder 🏆') liveBids[i].status = 'Outbid';
-        }
-        setLadduBids(liveBids);
-        localStorage.setItem('srs_laddu_bids', JSON.stringify(liveBids));
-      }
-    }, (error) => {
-      console.warn("Firestore live laddu bids listener note:", error.message);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
+  // STEP 6: ATOMIC SEQUENTIAL RECEIPT NUMBERING & DONATION ENTRY (festivals/{selectedYear}/donations)
   const addDonation = async (donationData) => {
     const formattedAmount = parseFloat(donationData.amount) || 0;
-    const count = donations.length + 1;
-    const padCount = String(count).padStart(6, '0');
-    const autoReceiptNo = `SRS-2026-${padCount}`;
     const dateStr = donationData.date || new Date().toISOString().split('T')[0];
     const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    const pStatus = donationData.paymentStatus || 'Successful';
 
-    // Dual-casing field object for 100% compatibility with all Firestore rules & legacy document schemas
+    // Ensure Firebase Auth is active
+    if (!auth.currentUser) {
+      try {
+        await signInWithEmailAndPassword(auth, 'speedsltns@gmail.com', 'netha@123');
+      } catch (e1) {
+        try {
+          await signInWithEmailAndPassword(auth, 'speedsltns@gmail.com', 'sreeram2026');
+        } catch (e2) {}
+      }
+    }
+
+    // Atomic Sequential Receipt Counter Transaction on festivals/{selectedYear}/settings/counters
+    let nextCount = 1;
+    try {
+      const counterRef = doc(db, "festivals", selectedYear, "settings", "counters");
+      await runTransaction(db, async (transaction) => {
+        const counterSnap = await transaction.get(counterRef);
+        if (counterSnap.exists()) {
+          const currentCounter = counterSnap.data().receiptCounter || 0;
+          nextCount = currentCounter + 1;
+        } else {
+          nextCount = donations.length + 1;
+        }
+        transaction.set(counterRef, { receiptCounter: nextCount, lastUpdated: serverTimestamp() }, { merge: true });
+      });
+    } catch (txErr) {
+      console.warn("Atomic counter transaction note:", txErr.message);
+      nextCount = donations.length + 1;
+    }
+
+    const padCount = String(nextCount).padStart(6, '0');
+    const autoReceiptNo = `SRS-${selectedYear}-${padCount}`;
+
     const newDonationObj = {
       receiptNo: autoReceiptNo,
       'Receipt No': autoReceiptNo,
@@ -593,6 +645,9 @@ export const AppProvider = ({ children }) => {
       'Address': donationData.address || "Govindhupalli, Telangana",
       paymentMethod: donationData.paymentMethod || "UPI",
       'Payment Method': donationData.paymentMethod || "UPI",
+      paymentStatus: pStatus,
+      'Payment Status': pStatus,
+      status: pStatus,
       notes: donationData.notes || "Vinayaka Chavithi Donation",
       'Notes': donationData.notes || "Vinayaka Chavithi Donation",
       collector: currentUser?.name || "Gurram Karthikeya",
@@ -604,38 +659,17 @@ export const AppProvider = ({ children }) => {
       createdAt: serverTimestamp()
     };
 
-    // Ensure Firebase Auth is active before writing to Firestore
-    if (!auth.currentUser) {
-      try {
-        await signInWithEmailAndPassword(auth, 'speedsltns@gmail.com', 'netha@123');
-      } catch (e1) {
-        try {
-          await signInWithEmailAndPassword(auth, 'speedsltns@gmail.com', 'sreeram2026');
-        } catch (e2) {}
-      }
-    }
-
-    // Direct write to Cloud Firestore DB
+    // Direct Write to festivals/{selectedYear}/donations
     try {
-      const docRef = await addDoc(collection(db, "donations"), newDonationObj);
-      console.log("Donation successfully saved to Cloud Firestore DB with ID:", docRef.id);
+      const targetColRef = collection(db, "festivals", selectedYear, "donations");
+      const docRef = await addDoc(targetColRef, newDonationObj);
       newDonationObj.id = docRef.id;
     } catch (err) {
-      console.warn("Firestore client write error:", err.message);
-      fetch('/api/add-donation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ donation: newDonationObj })
-      }).catch(e => console.warn("Add donation serverless API note:", e.message));
+      console.warn("Firestore client write note:", err.message);
     }
 
-    setDonations(prev => {
-      const updated = [{ ...newDonationObj, id: newDonationObj.id || Date.now().toString() }, ...prev];
-      localStorage.setItem('srs_donations', JSON.stringify(updated));
-      return updated;
-    });
+    setDonations(prev => [{ ...newDonationObj, id: newDonationObj.id || Date.now().toString() }, ...prev]);
 
-    // Dispatch background WhatsApp receipt API
     try {
       fetch('/api/send-receipt', {
         method: 'POST',
@@ -647,14 +681,13 @@ export const AppProvider = ({ children }) => {
           receiptNo: newDonationObj.receiptNo
         })
       }).catch(err => console.warn("Background receipt dispatch note:", err));
-    } catch (e) {
-      console.warn("Receipt dispatch note:", e);
-    }
+    } catch (e) {}
 
     return newDonationObj;
   };
 
-  const addExpense = (expenseData) => {
+  // STEP 5: ADD EXPENSE (festivals/{selectedYear}/expenses)
+  const addExpense = async (expenseData) => {
     const formattedAmount = parseFloat(expenseData.amount) || 0;
     const newExpenseObj = {
       vendor: expenseData.vendor || "General Expense",
@@ -668,55 +701,108 @@ export const AppProvider = ({ children }) => {
       createdAt: serverTimestamp()
     };
 
-    if (navigator.onLine) {
-      addDoc(collection(db, "expenses"), newExpenseObj).catch(err => console.warn("Firestore add expense error:", err));
+    try {
+      const targetColRef = collection(db, "festivals", selectedYear, "expenses");
+      const docRef = await addDoc(targetColRef, newExpenseObj);
+      newExpenseObj.id = docRef.id;
+    } catch (err) {
+      console.warn("Firestore add expense error:", err);
     }
 
-    setExpenses(prev => {
-      const updated = [{ ...newExpenseObj, id: Date.now().toString() }, ...prev];
-      localStorage.setItem('srs_expenses', JSON.stringify(updated));
-      return updated;
-    });
+    setExpenses(prev => [{ ...newExpenseObj, id: newExpenseObj.id || Date.now().toString() }, ...prev]);
     return newExpenseObj;
   };
 
-  const addLadduBid = (bidData) => {
-    const formattedAmount = parseFloat(bidData.amount) || 0;
-    const newBidObj = {
-      bidderName: bidData.bidderName || "Bidder",
-      mobile: bidData.mobile || "N/A",
-      amount: formattedAmount,
-      time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-      status: "Leading Bidder 🏆",
-      createdAt: serverTimestamp()
-    };
-
-    if (navigator.onLine) {
-      addDoc(collection(db, "ladduBids"), newBidObj).catch(err => console.warn("Firestore add bid error:", err));
+  // STEP 9: COMMITTEE MANAGEMENT FUNCTIONS (Position & Name only)
+  const addCommitteeMember = async (position, name) => {
+    if (!position || !name) return;
+    const newMember = { position: position.trim(), name: name.trim(), createdAt: serverTimestamp() };
+    try {
+      const colRef = collection(db, "festivals", selectedYear, "committee");
+      const docRef = await addDoc(colRef, newMember);
+      newMember.id = docRef.id;
+    } catch (e) {
+      console.warn("Add committee member error:", e.message);
     }
-
-    setLadduBids(prev => {
-      const updated = [newBidObj, ...prev.map(b => ({ ...b, status: 'Outbid' }))].sort((a, b) => b.amount - a.amount);
-      localStorage.setItem('srs_laddu_bids', JSON.stringify(updated));
-      return updated;
-    });
-
-    logAction(bidData.bidderName, 'Bidder', `Placed Laddu Auction Bid ₹${formattedAmount}`, { mobile: bidData.mobile });
-    return newBidObj;
+    setCommitteeMembers(prev => [...prev, { ...newMember, id: newMember.id || String(Date.now()) }]);
   };
 
-  const freshSystemReset = () => {
-    setDonations([]);
-    setExpenses([]);
-    localStorage.removeItem('srs_donations_backup');
-    localStorage.removeItem('srs_expenses_backup');
-    logAction(currentUser?.name || 'Super Admin', role || 'Super Admin', 'System Data Reset to 0 (Fresh Start)', {});
+  const updateCommitteeMember = async (memberId, position, name) => {
+    try {
+      const memberRef = doc(db, "festivals", selectedYear, "committee", memberId);
+      await updateDoc(memberRef, { position: position.trim(), name: name.trim() });
+    } catch (e) {
+      console.warn("Update committee member error:", e.message);
+    }
+    setCommitteeMembers(prev => prev.map(m => m.id === memberId ? { ...m, position: position.trim(), name: name.trim() } : m));
   };
+
+  const deleteCommitteeMember = async (memberId) => {
+    try {
+      const memberRef = doc(db, "festivals", selectedYear, "committee", memberId);
+      await deleteDoc(memberRef);
+    } catch (e) {
+      console.warn("Delete committee member error:", e.message);
+    }
+    setCommitteeMembers(prev => prev.filter(m => m.id !== memberId));
+  };
+
+  // STEP 10: SIMPLIFIED SPONSORS FUNCTIONS (Name & Purpose only)
+  const addSponsor = async (name, purpose) => {
+    if (!name || !purpose) return;
+    const newSponsor = { name: name.trim(), purpose: purpose.trim(), createdAt: serverTimestamp() };
+    try {
+      const colRef = collection(db, "festivals", selectedYear, "sponsors");
+      const docRef = await addDoc(colRef, newSponsor);
+      newSponsor.id = docRef.id;
+    } catch (e) {
+      console.warn("Add sponsor error:", e.message);
+    }
+    setSponsors(prev => [...prev, { ...newSponsor, id: newSponsor.id || String(Date.now()) }]);
+  };
+
+  const updateSponsor = async (sponsorId, name, purpose) => {
+    try {
+      const sponsorRef = doc(db, "festivals", selectedYear, "sponsors", sponsorId);
+      await updateDoc(sponsorRef, { name: name.trim(), purpose: purpose.trim() });
+    } catch (e) {
+      console.warn("Update sponsor error:", e.message);
+    }
+    setSponsors(prev => prev.map(s => s.id === sponsorId ? { ...s, name: name.trim(), purpose: purpose.trim() } : s));
+  };
+
+  const deleteSponsor = async (sponsorId) => {
+    try {
+      const sponsorRef = doc(db, "festivals", selectedYear, "sponsors", sponsorId);
+      await deleteDoc(sponsorRef);
+    } catch (e) {
+      console.warn("Delete sponsor error:", e.message);
+    }
+    setSponsors(prev => prev.filter(s => s.id !== sponsorId));
+  };
+
+  // STEP 7: COMPUTED FINANCIAL METRICS
+  const totalSuccessfulCollection = donations
+    .filter(d => (d.paymentStatus || d.status || 'Successful') === 'Successful')
+    .reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+
+  const totalPendingAmount = donations
+    .filter(d => (d.paymentStatus || d.status) === 'Pending')
+    .reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+
+  const totalPartialAmount = donations
+    .filter(d => (d.paymentStatus || d.status) === 'Partial')
+    .reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+
+  const totalExpensesAmount = expenses
+    .reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
 
   return (
     <AppContext.Provider value={{
       lang,
       setLang,
+      selectedYear,
+      setSelectedYear,
       isAuthInitializing,
       authStatusText,
       role,
@@ -744,8 +830,18 @@ export const AppProvider = ({ children }) => {
       setCommitteeInfo,
       donations,
       expenses,
-      ladduBids,
-      addLadduBid,
+      committeeMembers,
+      addCommitteeMember,
+      updateCommitteeMember,
+      deleteCommitteeMember,
+      sponsors,
+      addSponsor,
+      updateSponsor,
+      deleteSponsor,
+      totalSuccessfulCollection,
+      totalPendingAmount,
+      totalPartialAmount,
+      totalExpensesAmount,
       notifications,
       addDonation,
       addExpense,

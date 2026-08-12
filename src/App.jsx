@@ -25,8 +25,8 @@ import { ReportsView } from './views/ReportsView';
 import { CommunityView } from './views/CommunityView';
 import { AiInsightsView } from './views/AiInsightsView';
 import { SettingsView } from './views/SettingsView';
-import { LadduAuctionView } from './views/LadduAuctionView';
-import { LeaderboardView } from './views/LeaderboardView';
+import { CommitteeView } from './views/CommitteeView';
+import { SponsorsView } from './views/SponsorsView';
 
 import { PublicReceiptPage } from './views/PublicReceiptPage';
 
@@ -176,6 +176,10 @@ const MainAppContent = () => {
           {activeTab === 'leaderboard' && (
             <LeaderboardView />
           )}
+
+          {activeTab === 'committee' && <CommitteeView />}
+
+          {activeTab === 'sponsors' && <SponsorsView />}
 
           {activeTab === 'expenses' && (
             <ExpensesView 

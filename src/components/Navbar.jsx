@@ -33,7 +33,7 @@ export const Navbar = ({
   onOpenWhatsApp,
   onOpenAuditLog
 }) => {
-  const { lang, setLang, t, role, notifications, committeeInfo, isOnline, isAuthenticated, currentUser, signOut, registeredUsers = [] } = useApp();
+  const { lang, setLang, t, role, notifications, committeeInfo, isOnline, isAuthenticated, currentUser, signOut, registeredUsers = [], selectedYear, setSelectedYear } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
@@ -63,12 +63,21 @@ export const Navbar = ({
                   <h1 className="font-black text-xs sm:text-base text-slate-900 tracking-tight leading-none truncate max-w-[120px] sm:max-w-none">
                     {committeeInfo?.name || "SREE RAM SENA"}
                   </h1>
-                  <span className="bg-indigo-100 text-indigo-900 text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-full border border-indigo-200">
-                    2026
-                  </span>
+                  {/* Step 8: Global Festival Year Switcher Dropdown */}
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="bg-amber-100 hover:bg-amber-200 text-amber-950 text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-lg border border-amber-300 shadow-xs cursor-pointer outline-none transition"
+                    title="Switch Active Festival Year Context"
+                  >
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                  </select>
                 </div>
                 <p className="text-[10px] sm:text-[11px] font-bold text-indigo-600 mt-0.5 hidden xs:block">
-                  {t?.appSubName || "Divine Manager 2026"}
+                  Festival Year: {selectedYear}
                 </p>
               </div>
             </div>
