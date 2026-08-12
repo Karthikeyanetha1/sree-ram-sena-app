@@ -601,6 +601,69 @@ export const AppProvider = ({ children }) => {
     return () => unsubscribe();
   }, [selectedYear]);
 
+  // LADDU AUCTION WINNER HISTORY MODULE (NO LIVE BIDDING)
+  const previousYear = String(parseInt(selectedYear) - 1);
+  const [ladduAuctionCurrentYear, setLadduAuctionCurrentYear] = useState([]);
+  const [ladduAuctionPreviousYear, setLadduAuctionPreviousYear] = useState([]);
+
+  // Listener for Current Year Laddu Auction (festivals/{selectedYear}/ladduAuction)
+  useEffect(() => {
+    const colRef = collection(db, "festivals", selectedYear, "ladduAuction");
+    const unsubscribe = onSnapshot(colRef, (snapshot) => {
+      const liveData = snapshot.docs.map(docSnap => {
+        const d = docSnap.data();
+        return {
+          id: docSnap.id,
+          ...d,
+          winningAmount: parseFloat(d.winningAmount || d.amount) || 0,
+          winnerName: d.winnerName || d.name || 'Devotee',
+          status: d.status || 'Active'
+        };
+      })
+      .filter(item => item.status !== 'Archived')
+      .sort((a, b) => {
+        const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (parseInt(a.id) || 0);
+        const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (parseInt(b.id) || 0);
+        return timeB - timeA; // DESC: Newest first!
+      });
+
+      setLadduAuctionCurrentYear(liveData);
+    }, (error) => {
+      console.warn(`Firestore live ladduAuction current year listener note (${selectedYear}):`, error.message);
+    });
+
+    return () => unsubscribe();
+  }, [selectedYear]);
+
+  // Listener for Previous Year Laddu Auction (festivals/{previousYear}/ladduAuction)
+  useEffect(() => {
+    const colRef = collection(db, "festivals", previousYear, "ladduAuction");
+    const unsubscribe = onSnapshot(colRef, (snapshot) => {
+      const liveData = snapshot.docs.map(docSnap => {
+        const d = docSnap.data();
+        return {
+          id: docSnap.id,
+          ...d,
+          winningAmount: parseFloat(d.winningAmount || d.amount) || 0,
+          winnerName: d.winnerName || d.name || 'Devotee',
+          status: d.status || 'Active'
+        };
+      })
+      .filter(item => item.status !== 'Archived')
+      .sort((a, b) => {
+        const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (parseInt(a.id) || 0);
+        const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (parseInt(b.id) || 0);
+        return timeB - timeA; // DESC: Newest first!
+      });
+
+      setLadduAuctionPreviousYear(liveData);
+    }, (error) => {
+      console.warn(`Firestore live ladduAuction previous year listener note (${previousYear}):`, error.message);
+    });
+
+    return () => unsubscribe();
+  }, [previousYear]);
+
   // FIRESTORE REAL-TIME LISTENER FOR REGISTERED USERS
   useEffect(() => {
     const q = query(collection(db, "users"));
@@ -819,6 +882,55 @@ export const AppProvider = ({ children }) => {
     setSponsors(prev => prev.filter(s => s.id !== sponsorId));
   };
 
+  // LADDU AUCTION WINNER HISTORY FUNCTIONS (SUPER ADMIN ONLY)
+  const addLadduAuctionWinner = async (data) => {
+    if (!data.winnerName || !data.winningAmount) return;
+    const newRecord = {
+      winnerName: data.winnerName.trim(),
+      winningAmount: parseFloat(data.winningAmount) || 0,
+      village: (data.village || '').trim(),
+      auctionDate: data.auctionDate || new Date().toISOString().split('T')[0],
+      festivalYear: selectedYear,
+      status: 'Active',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    try {
+      const colRef = collection(db, "festivals", selectedYear, "ladduAuction");
+      const docRef = await addDoc(colRef, newRecord);
+      newRecord.id = docRef.id;
+    } catch (e) {
+      console.warn("Add laddu auction winner error:", e.message);
+    }
+  };
+
+  const updateLadduAuctionWinner = async (id, data) => {
+    try {
+      const docRef = doc(db, "festivals", selectedYear, "ladduAuction", id);
+      await updateDoc(docRef, {
+        winnerName: data.winnerName.trim(),
+        winningAmount: parseFloat(data.winningAmount) || 0,
+        village: (data.village || '').trim(),
+        auctionDate: data.auctionDate,
+        updatedAt: serverTimestamp()
+      });
+    } catch (e) {
+      console.warn("Update laddu auction winner error:", e.message);
+    }
+  };
+
+  const archiveLadduAuctionWinner = async (id) => {
+    try {
+      const docRef = doc(db, "festivals", selectedYear, "ladduAuction", id);
+      await updateDoc(docRef, {
+        status: 'Archived',
+        updatedAt: serverTimestamp()
+      });
+    } catch (e) {
+      console.warn("Archive laddu auction winner error:", e.message);
+    }
+  };
+
   // STEP 7: COMPUTED FINANCIAL METRICS
   const totalSuccessfulCollection = donations
     .filter(d => (d.paymentStatus || d.status || 'Successful') === 'Successful')
@@ -883,6 +995,12 @@ export const AppProvider = ({ children }) => {
       addSponsor,
       updateSponsor,
       deleteSponsor,
+      previousYear,
+      ladduAuctionCurrentYear,
+      ladduAuctionPreviousYear,
+      addLadduAuctionWinner,
+      updateLadduAuctionWinner,
+      archiveLadduAuctionWinner,
       totalSuccessfulCollection,
       totalPendingAmount,
       totalPartialAmount,

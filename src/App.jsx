@@ -27,6 +27,7 @@ import { AiInsightsView } from './views/AiInsightsView';
 import { SettingsView } from './views/SettingsView';
 import { CommitteeView } from './views/CommitteeView';
 import { SponsorsView } from './views/SponsorsView';
+import { LadduAuctionHistoryView } from './views/LadduAuctionHistoryView';
 
 import { PublicReceiptPage } from './views/PublicReceiptPage';
 
@@ -167,11 +168,7 @@ const MainAppContent = () => {
             />
           )}
 
-          {activeTab === 'laddu-auction' && (
-            <LadduAuctionView 
-              onViewReceipt={handleOpenReceipt}
-            />
-          )}
+          {activeTab === 'laddu-auction' && <LadduAuctionHistoryView />}
 
           {activeTab === 'leaderboard' && (
             <LeaderboardView />

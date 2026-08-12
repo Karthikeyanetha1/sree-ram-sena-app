@@ -22,6 +22,7 @@ export const Sidebar = ({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) 
   const navItems = [
     { id: 'dashboard', label: t.dashboard || 'Dashboard', icon: LayoutDashboard },
     { id: 'donations', label: t.donations || 'Donations', icon: HeartHandshake, badge: 'Live' },
+    { id: 'laddu-auction', label: 'Laddu Auction', emojiIcon: '🏆', badge: 'History' },
     { id: 'committee', label: 'Committee', icon: UserCheck, badge: 'Staff' },
     { id: 'sponsors', label: 'Sponsors', emojiIcon: '🤝', badge: 'Patrons' },
     { id: 'expenses', label: t.expenses || 'Expenses', icon: Receipt },
