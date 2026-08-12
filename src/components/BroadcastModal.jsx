@@ -106,26 +106,38 @@ export const BroadcastModal = ({ isOpen, onClose }) => {
     setDeliveredCount(0);
     setFailedCount(0);
 
-    await new Promise(res => setTimeout(res, 600));
+    await new Promise(res => setTimeout(res, 400));
     setBroadcastStatus('Sending');
 
     let delivered = 0;
-    let failed = 0;
 
     for (const donor of targetDonors) {
       let finalMessage = currentTemplateText
         .replace(/\[DONOR_NAME\]/g, donor.donorName || 'Devotee')
         .replace(/\[AMOUNT\]/g, (donor.amount || 0).toLocaleString('en-IN'));
 
-      const phone = donor.mobile ? `91${donor.mobile.replace(/\D/g, '')}` : '';
-      const encoded = encodeURIComponent(finalMessage);
+      const cleanNum = (donor.mobile || '').replace(/\D/g, '');
+      if (cleanNum.length >= 10) {
+        const phone = `91${cleanNum.slice(-10)}`;
+        const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(finalMessage)}`;
+
+        try {
+          const a = document.createElement('a');
+          a.href = waUrl;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } catch (e) {
+          console.warn("Broadcast tab open note:", e);
+        }
+      }
       
-      // Execute 1-click dispatch
-      window.open(`https://wa.me/${phone}?text=${encoded}`, '_blank');
       delivered++;
       setDeliveredCount(delivered);
 
-      await new Promise(res => setTimeout(res, 400));
+      await new Promise(res => setTimeout(res, 800));
     }
 
     setBroadcastStatus('Completed');
