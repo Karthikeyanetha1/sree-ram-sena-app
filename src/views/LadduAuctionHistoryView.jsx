@@ -23,13 +23,15 @@ export const LadduAuctionHistoryView = () => {
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [targetYear, setTargetYear] = useState(selectedYear);
   const [winnerName, setWinnerName] = useState('');
   const [winningAmount, setWinningAmount] = useState('');
   const [village, setVillage] = useState('');
   const [auctionDate, setAuctionDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const handleOpenAdd = () => {
+  const handleOpenAdd = (yearOverride = selectedYear) => {
     setEditingId(null);
+    setTargetYear(yearOverride);
     setWinnerName('');
     setWinningAmount('');
     setVillage('Govindhupalli');
@@ -37,8 +39,9 @@ export const LadduAuctionHistoryView = () => {
     setModalOpen(true);
   };
 
-  const handleOpenEdit = (record) => {
+  const handleOpenEdit = (record, yearOverride = selectedYear) => {
     setEditingId(record.id);
+    setTargetYear(record.festivalYear || yearOverride);
     setWinnerName(record.winnerName || '');
     setWinningAmount(record.winningAmount || '');
     setVillage(record.village || '');
@@ -57,7 +60,8 @@ export const LadduAuctionHistoryView = () => {
       winnerName: winnerName.trim(),
       winningAmount: parseFloat(winningAmount) || 0,
       village: village.trim(),
-      auctionDate
+      auctionDate,
+      targetYear
     };
 
     if (editingId) {
@@ -72,9 +76,9 @@ export const LadduAuctionHistoryView = () => {
     setVillage('');
   };
 
-  const handleArchive = async (id, name) => {
-    if (window.confirm(`Are you sure you want to archive the auction winner entry for "${name}"?`)) {
-      await archiveLadduAuctionWinner(id);
+  const handleArchive = async (id, name, yearToArchive = selectedYear) => {
+    if (window.confirm(`Are you sure you want to archive the auction winner entry for "${name}" (${yearToArchive})?`)) {
+      await archiveLadduAuctionWinner(id, yearToArchive);
     }
   };
 
@@ -99,13 +103,22 @@ export const LadduAuctionHistoryView = () => {
         </div>
 
         {isSuperAdmin && (
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center space-x-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold text-xs px-4 py-3 rounded-2xl shadow-lg transition transform active:scale-95 flex-shrink-0"
-          >
-            <Plus className="w-4 h-4 text-slate-950 stroke-[3]" />
-            <span>+ Add Auction Winner ({selectedYear})</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handleOpenAdd(selectedYear)}
+              className="flex items-center space-x-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold text-xs px-4 py-3 rounded-2xl shadow-lg transition transform active:scale-95 flex-shrink-0"
+            >
+              <Plus className="w-4 h-4 text-slate-950 stroke-[3]" />
+              <span>+ Add {selectedYear} Winner</span>
+            </button>
+            <button
+              onClick={() => handleOpenAdd(previousYear)}
+              className="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-extrabold text-xs px-3 py-3 rounded-2xl border border-slate-600 shadow-md transition transform active:scale-95 flex-shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Add {previousYear} Winner</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -123,9 +136,30 @@ export const LadduAuctionHistoryView = () => {
                 🏆 {selectedYear} LADDU AUCTION WINNER
               </span>
             </div>
-            <span className="text-[11px] font-bold text-amber-100/90 bg-amber-950/40 px-2.5 py-0.5 rounded-lg border border-amber-400/20">
-              Top Official Record
-            </span>
+            
+            <div className="flex items-center space-x-2">
+              <span className="text-[11px] font-bold text-amber-100/90 bg-amber-950/40 px-2.5 py-0.5 rounded-lg border border-amber-400/20">
+                Top Official Record
+              </span>
+              {isSuperAdmin && latestCurrentWinner && (
+                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => handleOpenEdit(latestCurrentWinner, selectedYear)}
+                    className="p-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900 text-amber-200 transition"
+                    title="Edit Top Winner"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleArchive(latestCurrentWinner.id, latestCurrentWinner.winnerName, selectedYear)}
+                    className="p-1.5 rounded-lg bg-amber-950/60 hover:bg-red-900 text-red-200 transition"
+                    title="Archive Record"
+                  >
+                    <Archive className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {latestCurrentWinner ? (
@@ -179,6 +213,24 @@ export const LadduAuctionHistoryView = () => {
               <span className="bg-slate-700/80 text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-md border border-slate-600">
                 {previousYear} Record
               </span>
+              {isSuperAdmin && latestPreviousWinner && (
+                <div className="flex items-center space-x-1 ml-2">
+                  <button
+                    onClick={() => handleOpenEdit(latestPreviousWinner, previousYear)}
+                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 transition"
+                    title="Edit 2025 Winner"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => handleArchive(latestPreviousWinner.id, latestPreviousWinner.winnerName, previousYear)}
+                    className="p-1 rounded bg-slate-800 hover:bg-red-900 text-red-300 transition"
+                    title="Archive Record"
+                  >
+                    <Archive className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
 
             {latestPreviousWinner ? (
@@ -196,13 +248,22 @@ export const LadduAuctionHistoryView = () => {
           </div>
         </div>
 
-        {latestPreviousWinner && (
+        {latestPreviousWinner ? (
           <div className="bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-700 text-right flex-shrink-0 self-end sm:self-auto">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Winning Amount</span>
             <span className="text-lg font-black text-amber-400">
               ₹ {parseFloat(latestPreviousWinner.winningAmount).toLocaleString('en-IN')}/-
             </span>
           </div>
+        ) : (
+          isSuperAdmin && (
+            <button
+              onClick={() => handleOpenAdd(previousYear)}
+              className="text-xs font-bold bg-amber-400 hover:bg-amber-500 text-slate-950 px-3 py-1.5 rounded-xl transition"
+            >
+              + Record {previousYear} Winner
+            </button>
+          )
         )}
       </div>
 
@@ -225,7 +286,7 @@ export const LadduAuctionHistoryView = () => {
             <Trophy className="w-12 h-12 text-slate-300 mx-auto" />
             <h4 className="font-bold text-sm text-slate-700">No Historical Records Found for {selectedYear}</h4>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              {isSuperAdmin ? 'Click "+ Add Auction Winner (' + selectedYear + ')" above to record the sacred auction winner.' : 'No auction winner entries have been published for ' + selectedYear + ' yet.'}
+              {isSuperAdmin ? 'Click "+ Add ' + selectedYear + ' Winner" above to record the sacred auction winner.' : 'No auction winner entries have been published for ' + selectedYear + ' yet.'}
             </p>
           </div>
         ) : (
@@ -254,14 +315,14 @@ export const LadduAuctionHistoryView = () => {
                       {isSuperAdmin && (
                         <div className="flex items-center space-x-1">
                           <button
-                            onClick={() => handleOpenEdit(record)}
+                            onClick={() => handleOpenEdit(record, selectedYear)}
                             className="p-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-800 transition"
                             title="Edit Winner Entry"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => handleArchive(record.id, record.winnerName)}
+                            onClick={() => handleArchive(record.id, record.winnerName, selectedYear)}
                             className="p-1.5 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-700 transition"
                             title="Archive Record"
                           >
@@ -312,7 +373,7 @@ export const LadduAuctionHistoryView = () => {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-amber-600" />
-                <span>{editingId ? 'Edit Laddu Auction Winner' : 'Add Laddu Auction Winner'} ({selectedYear})</span>
+                <span>{editingId ? 'Edit Laddu Auction Winner' : 'Add Laddu Auction Winner'}</span>
               </h3>
               <button onClick={() => setModalOpen(false)} className="p-1 rounded-full text-slate-400 hover:bg-slate-100 transition">
                 <X className="w-5 h-5" />
@@ -320,6 +381,21 @@ export const LadduAuctionHistoryView = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Target Festival Year *</label>
+                <select
+                  value={targetYear}
+                  onChange={(e) => setTargetYear(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-amber-50 border border-amber-300 rounded-xl text-xs font-black text-amber-950 outline-none focus:border-amber-500"
+                  required
+                >
+                  <option value="2025">2025 Festival Year</option>
+                  <option value="2026">2026 Festival Year</option>
+                  <option value="2027">2027 Festival Year</option>
+                  <option value="2028">2028 Festival Year</option>
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Winner Full Name *</label>
                 <input
@@ -378,7 +454,7 @@ export const LadduAuctionHistoryView = () => {
                   type="submit"
                   className="px-5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 shadow-md transition"
                 >
-                  {editingId ? 'Save Winner Changes' : 'Record Auction Winner'}
+                  {editingId ? `Save Changes for ${targetYear}` : `Record Winner for ${targetYear}`}
                 </button>
               </div>
             </form>

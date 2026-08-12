@@ -884,19 +884,20 @@ export const AppProvider = ({ children }) => {
 
   // LADDU AUCTION WINNER HISTORY FUNCTIONS (SUPER ADMIN ONLY)
   const addLadduAuctionWinner = async (data) => {
+    const yearToUse = String(data.targetYear || data.festivalYear || selectedYear).trim();
     if (!data.winnerName || !data.winningAmount) return;
     const newRecord = {
       winnerName: data.winnerName.trim(),
       winningAmount: parseFloat(data.winningAmount) || 0,
       village: (data.village || '').trim(),
       auctionDate: data.auctionDate || new Date().toISOString().split('T')[0],
-      festivalYear: selectedYear,
+      festivalYear: yearToUse,
       status: 'Active',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
     try {
-      const colRef = collection(db, "festivals", selectedYear, "ladduAuction");
+      const colRef = collection(db, "festivals", yearToUse, "ladduAuction");
       const docRef = await addDoc(colRef, newRecord);
       newRecord.id = docRef.id;
     } catch (e) {
@@ -905,8 +906,9 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateLadduAuctionWinner = async (id, data) => {
+    const yearToUse = String(data.targetYear || data.festivalYear || selectedYear).trim();
     try {
-      const docRef = doc(db, "festivals", selectedYear, "ladduAuction", id);
+      const docRef = doc(db, "festivals", yearToUse, "ladduAuction", id);
       await updateDoc(docRef, {
         winnerName: data.winnerName.trim(),
         winningAmount: parseFloat(data.winningAmount) || 0,
@@ -919,9 +921,10 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const archiveLadduAuctionWinner = async (id) => {
+  const archiveLadduAuctionWinner = async (id, targetYear) => {
+    const yearToUse = String(targetYear || selectedYear).trim();
     try {
-      const docRef = doc(db, "festivals", selectedYear, "ladduAuction", id);
+      const docRef = doc(db, "festivals", yearToUse, "ladduAuction", id);
       await updateDoc(docRef, {
         status: 'Archived',
         updatedAt: serverTimestamp()
