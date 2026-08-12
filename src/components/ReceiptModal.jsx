@@ -199,11 +199,11 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
           <div className="border-[6px] border-double border-emerald-800 rounded-3xl p-5 sm:p-6 bg-gradient-to-b from-amber-50/40 via-white to-emerald-50/30 relative shadow-inner overflow-hidden">
             
             {/* SACRED LORD GANESHA WATERMARK OVERLAY */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-15 select-none z-0 overflow-hidden">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 overflow-hidden">
               <img 
-                src="/assets/ganesha_watermark.png" 
+                src="/assets/ganesha_watermark_soft.png" 
                 alt="Lord Ganesha Watermark" 
-                className="w-72 sm:w-80 h-auto object-contain filter mix-blend-multiply opacity-80"
+                className="w-72 sm:w-80 h-auto object-contain"
               />
             </div>
             
