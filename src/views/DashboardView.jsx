@@ -32,7 +32,7 @@ import {
 } from 'recharts';
 
 export const DashboardView = ({ onOpenNewDonation, onOpenNewExpense, onOpenVoice, onViewReceipt, onOpenOcr, onOpenLogin, onOpenWizard }) => {
-  const { t, donations, expenses, committeeInfo, role, currentUser, countdown, selectedYear } = useApp();
+  const { t, donations, expenses, committeeInfo, role, currentUser, countdown, selectedYear, isAuthenticated } = useApp();
 
   const safeDonations = Array.isArray(donations) ? donations : [];
   const safeExpenses = Array.isArray(expenses) ? expenses : [];

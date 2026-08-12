@@ -5,6 +5,8 @@ import {
   signInWithEmailAndPassword, 
   signInAnonymously,
   onAuthStateChanged, 
+  setPersistence,
+  browserLocalPersistence,
   signOut as firebaseSignOut 
 } from 'firebase/auth';
 import { logAction } from '../utils/auditLogger';
@@ -15,6 +17,7 @@ import {
   deleteDoc, 
   updateDoc, 
   doc, 
+  getDoc,
   getDocs,
   serverTimestamp, 
   query, 
