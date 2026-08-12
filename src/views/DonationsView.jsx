@@ -189,9 +189,9 @@ export const DonationsView = ({ onViewReceipt, openAddModal, setOpenAddModal, on
     setDictationNotice('');
   };
 
-  const handleDelete = (receiptNo, donorName) => {
-    if (window.confirm(`Are you sure you want to delete receipt ${receiptNo} (${donorName})? This action will be logged in the Security Audit Trail.`)) {
-      deleteDonation(receiptNo);
+  const handleDelete = (idOrReceiptNo, donorName) => {
+    if (window.confirm(`Are you sure you want to delete receipt ${idOrReceiptNo} (${donorName})? This action will permanently remove it from Cloud Firestore.`)) {
+      deleteDonation(idOrReceiptNo);
     }
   };
 
@@ -365,7 +365,7 @@ export const DonationsView = ({ onViewReceipt, openAddModal, setOpenAddModal, on
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={() => handleDelete(d.receiptNo, d.donorName)}
+                              onClick={() => handleDelete(d.id || d.receiptNo, d.donorName)}
                               className="p-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition"
                               title="Delete Receipt"
                             >

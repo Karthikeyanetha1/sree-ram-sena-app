@@ -46,19 +46,38 @@ export const PublicReceiptPage = ({ initialReceiptNo }) => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const fetchReceipt = async (noToFetch) => {
-    if (!noToFetch) {
+  const fetchReceipt = async (targetNo) => {
+    if (!targetNo) {
       setLoading(false);
       setNotFound(true);
       return;
     }
-    const targetNo = String(noToFetch).trim();
-    setLoading(true);
-    setNotFound(false);
 
-    // 1. Try Serverless API (/api/get-receipt)
+    const cleanTarget = String(targetNo).trim().toUpperCase();
+    const targetDigits = cleanTarget.replace(/\D/g, '');
+
+    const formatReceiptDoc = (docSnap) => {
+      const d = docSnap.data();
+      return {
+        id: docSnap.id,
+        receiptNo: d.receiptNo || d['Receipt No'] || cleanTarget,
+        donorName: d.donorName || d['Donor Name'] || d.name || 'Devotee',
+        amount: parseFloat(d.amount || d.Amount) || 0,
+        amountInWords: d.amountInWords || d['Amount In Words'] || `${parseFloat(d.amount || d.Amount) || 0} Rupees Only`,
+        date: d.date || d.Date || '',
+        paymentMethod: d.paymentMethod || d['Payment Method'] || 'UPI',
+        village: d.village || d.Village || 'Govindhupalli',
+        address: d.address || d.Address || '',
+        mobile: d.mobile || d.Mobile || '',
+        notes: d.notes || d.Notes || '',
+        status: d.status || d.Status || 'Verified',
+        collectorName: d.collectorName || d.collector || d['Collector'] || 'SREE RAM SENA'
+      };
+    };
+
+    // 1. API Route check
     try {
-      const res = await fetch(`/api/get-receipt?receiptNo=${encodeURIComponent(targetNo)}`);
+      const res = await fetch(`/api/get-receipt?receiptNo=${encodeURIComponent(cleanTarget)}`);
       const data = await res.json();
       if (data.success && data.donation) {
         setReceipt(data.donation);
@@ -66,72 +85,70 @@ export const PublicReceiptPage = ({ initialReceiptNo }) => {
         setLoading(false);
         return;
       }
-    } catch (e) {
-      console.warn("API receipt fetch note:", e.message);
+    } catch (e) {}
+
+    // 2. Query Firestore collections: festivals/2026/donations, festivals/2027/donations, festivals/2025/donations, and root /donations
+    const collectionsToSearch = [
+      collection(db, "festivals", "2026", "donations"),
+      collection(db, "festivals", "2027", "donations"),
+      collection(db, "festivals", "2025", "donations"),
+      collection(db, "donations")
+    ];
+
+    for (const colRef of collectionsToSearch) {
+      try {
+        const snap = await getDocs(colRef);
+        for (const docSnap of snap.docs) {
+          const d = docSnap.data();
+          const rNo = String(d.receiptNo || d['Receipt No'] || docSnap.id).trim().toUpperCase();
+          const rDigits = rNo.replace(/\D/g, '');
+
+          if (rNo === cleanTarget || (targetDigits.length >= 3 && rDigits === targetDigits)) {
+            console.log(`[PUBLIC RECEIPT] Found matching receipt in Firestore:`, docSnap.id);
+            setReceipt(formatReceiptDoc(docSnap));
+            setNotFound(false);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Firestore collection query note:", err.message);
+      }
     }
 
-    // 2. Fallback: Query Direct Cloud Firestore DB (donations collection)
-    try {
-      const q1 = query(collection(db, "donations"), where("receiptNo", "==", targetNo));
-      let snap = await getDocs(q1);
-
-      if (snap.empty) {
-        const q2 = query(collection(db, "donations"), where("Receipt No", "==", targetNo));
-        snap = await getDocs(q2);
-      }
-
-      if (!snap.empty) {
-        const d = snap.docs[0].data();
-        const foundDonation = {
-          id: snap.docs[0].id,
-          receiptNo: d.receiptNo || d['Receipt No'] || targetNo,
-          donorName: d.donorName || d['Donor Name'] || d.name || 'Devotee',
-          amount: parseFloat(d.amount || d.Amount) || 0,
-          date: d.date || d.Date || '',
-          paymentMethod: d.paymentMethod || d['Payment Method'] || 'UPI',
-          village: d.village || d.Village || 'Govindhupalli',
-          address: d.address || d.Address || '',
-          mobile: d.mobile || d.Mobile || '',
-          notes: d.notes || d.Notes || '',
-          status: d.status || d.Status || 'Verified',
-          collectorName: d.collectorName || d.collector || d['Collector'] || 'SREE RAM SENA'
-        };
-        setReceipt(foundDonation);
-        setNotFound(false);
-        setLoading(false);
-        return;
-      }
-    } catch (dbErr) {
-      console.warn("Direct Firestore receipt query note:", dbErr.message);
-    }
-
-    // 3. Fallback: Search LocalStorage Cache (srs_donations)
-    try {
-      const cached = JSON.parse(localStorage.getItem('srs_donations') || '[]');
-      const foundLocal = cached.find(item => 
-        String(item.receiptNo || item['Receipt No']).trim() === targetNo
-      );
-
-      if (foundLocal) {
-        setReceipt({
-          id: foundLocal.id || 'cached-receipt',
-          receiptNo: foundLocal.receiptNo || targetNo,
-          donorName: foundLocal.donorName || foundLocal['Donor Name'] || 'Devotee',
-          amount: parseFloat(foundLocal.amount) || 0,
-          date: foundLocal.date || '',
-          paymentMethod: foundLocal.paymentMethod || 'UPI',
-          village: foundLocal.village || 'Govindhupalli',
-          address: foundLocal.address || '',
-          mobile: foundLocal.mobile || '',
-          notes: foundLocal.notes || '',
-          status: 'Verified',
-          collectorName: foundLocal.collector || 'SREE RAM SENA'
+    // 3. Fallback: Search LocalStorage Caches
+    const cacheKeys = ['srs_donations_2026', 'srs_donations_2027', 'srs_donations_2025', 'srs_donations'];
+    for (const k of cacheKeys) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(k) || '[]');
+        const found = cached.find(item => {
+          const rNo = String(item.receiptNo || item['Receipt No'] || item.id).trim().toUpperCase();
+          const rDigits = rNo.replace(/\D/g, '');
+          return rNo === cleanTarget || (targetDigits.length >= 3 && rDigits === targetDigits);
         });
-        setNotFound(false);
-        setLoading(false);
-        return;
-      }
-    } catch (cacheErr) {}
+
+        if (found) {
+          setReceipt({
+            id: found.id || 'cached-receipt',
+            receiptNo: found.receiptNo || cleanTarget,
+            donorName: found.donorName || found['Donor Name'] || 'Devotee',
+            amount: parseFloat(found.amount || found.Amount) || 0,
+            amountInWords: found.amountInWords || `${found.amount || 0} Rupees Only`,
+            date: found.date || '',
+            paymentMethod: found.paymentMethod || 'UPI',
+            village: found.village || 'Govindhupalli',
+            address: found.address || '',
+            mobile: found.mobile || '',
+            notes: found.notes || '',
+            status: 'Verified',
+            collectorName: found.collector || 'SREE RAM SENA'
+          });
+          setNotFound(false);
+          setLoading(false);
+          return;
+        }
+      } catch (e) {}
+    }
 
     setReceipt(null);
     setNotFound(true);
@@ -322,8 +339,8 @@ ${cleanUrl}`;
                 </div>
 
                 {/* Center Title */}
-                <div className="text-center flex-1">
-                  <h2 className="text-lg sm:text-2xl font-black text-emerald-950 tracking-tight uppercase leading-tight font-serif">
+                <div className="text-center flex-1 min-w-0">
+                  <h2 className="text-base sm:text-xl font-black text-emerald-950 tracking-tight uppercase leading-tight font-serif break-words max-w-full px-1">
                     SREE RAM SENA
                   </h2>
                   <h3 className="text-xs sm:text-sm font-extrabold text-amber-700 tracking-wider uppercase mt-0.5">

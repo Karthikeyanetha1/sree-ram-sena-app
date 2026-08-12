@@ -169,7 +169,7 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
         </div>
 
         {/* PRINTABLE RECEIPT CONTAINER */}
-        <div className="p-4 sm:p-6 printable-area bg-white relative">
+        <div id="receipt-printable-area" className="p-4 sm:p-6 printable-area bg-white relative">
           
           {/* RECEIPT OUTER BORDER WITH DOUBLE GOLD & EMERALD BORDER */}
           <div className="border-[6px] border-double border-emerald-800 rounded-3xl p-5 sm:p-6 bg-gradient-to-b from-amber-50/40 via-white to-emerald-50/30 relative shadow-inner overflow-hidden">
@@ -190,14 +190,14 @@ export const ReceiptModal = ({ donation, isOpen, onClose, onNavigateHome }) => {
             <div className="flex items-center justify-between pb-4 border-b-2 border-emerald-800/30 gap-2">
               
               {/* Left Temple Seal Emblem */}
-              <div className="w-16 h-16 rounded-full border-2 border-emerald-800 p-1 flex flex-col items-center justify-center text-center bg-white shadow-sm flex-shrink-0">
-                <ShieldCheck className="w-6 h-6 text-emerald-800" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-emerald-800 p-1 flex flex-col items-center justify-center text-center bg-white shadow-sm flex-shrink-0">
+                <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-800" />
                 <span className="text-[8px] font-extrabold text-emerald-950 mt-0.5">Est. {committeeInfo.since || '2016'}</span>
               </div>
 
               {/* Center Title */}
-              <div className="text-center flex-1">
-                <h2 className="text-xl sm:text-2xl font-black text-emerald-950 tracking-tight uppercase leading-tight font-serif">
+              <div className="text-center flex-1 min-w-0">
+                <h2 className="text-base sm:text-xl font-black text-emerald-950 tracking-tight uppercase leading-tight font-serif break-words max-w-full px-1">
                   {committeeInfo.name}
                 </h2>
                 <h3 className="text-xs sm:text-sm font-extrabold text-amber-700 tracking-wider uppercase mt-0.5">

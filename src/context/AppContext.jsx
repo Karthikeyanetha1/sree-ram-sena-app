@@ -887,11 +887,15 @@ export const AppProvider = ({ children }) => {
       createdAt: serverTimestamp()
     };
 
-    // Direct Write to festivals/{selectedYear}/donations
+    // Dual Write to both festivals/{selectedYear}/donations AND root /donations
     try {
       const targetColRef = collection(db, "festivals", selectedYear, "donations");
       const docRef = await addDoc(targetColRef, newDonationObj);
       newDonationObj.id = docRef.id;
+
+      // Dual write to root /donations collection for backward compatibility and root queries
+      await addDoc(collection(db, "donations"), newDonationObj);
+      console.log(`✓ Saved donation ${autoReceiptNo} to both festivals/${selectedYear}/donations and root /donations`);
     } catch (err) {
       console.warn("Firestore client write note:", err.message);
     }
@@ -912,6 +916,72 @@ export const AppProvider = ({ children }) => {
     } catch (e) {}
 
     return newDonationObj;
+  };
+
+  const deleteDonation = async (donationIdOrReceiptNo) => {
+    console.log(`[DELETE DONATION] Deleting donation target: ${donationIdOrReceiptNo}`);
+
+    setDonations(prev => prev.filter(d => 
+      d.id !== donationIdOrReceiptNo && 
+      d.receiptNo !== donationIdOrReceiptNo && 
+      d['Receipt No'] !== donationIdOrReceiptNo
+    ));
+
+    try {
+      // 1. Direct doc deletion if ID matches subcollection doc
+      const subDocRef = doc(db, "festivals", selectedYear, "donations", donationIdOrReceiptNo);
+      const subSnap = await getDoc(subDocRef);
+      if (subSnap.exists()) {
+        await deleteDoc(subDocRef);
+        console.log(`✓ Deleted from festivals/${selectedYear}/donations/${donationIdOrReceiptNo}`);
+      }
+
+      // 2. Query festivals/{selectedYear}/donations by receiptNo or ID
+      const qSub = query(collection(db, "festivals", selectedYear, "donations"));
+      const subSnapDocs = await getDocs(qSub);
+      for (const dSnap of subSnapDocs.docs) {
+        const d = dSnap.data();
+        if (dSnap.id === donationIdOrReceiptNo || d.receiptNo === donationIdOrReceiptNo || d['Receipt No'] === donationIdOrReceiptNo) {
+          await deleteDoc(doc(db, "festivals", selectedYear, "donations", dSnap.id));
+          console.log(`✓ Deleted matching doc ${dSnap.id} from festivals/${selectedYear}/donations`);
+        }
+      }
+
+      // 3. Delete from root /donations collection
+      const rootSnap = await getDocs(collection(db, "donations"));
+      for (const rSnap of rootSnap.docs) {
+        const d = rSnap.data();
+        if (rSnap.id === donationIdOrReceiptNo || d.receiptNo === donationIdOrReceiptNo || d['Receipt No'] === donationIdOrReceiptNo) {
+          await deleteDoc(doc(db, "donations", rSnap.id));
+          console.log(`✓ Deleted matching doc ${rSnap.id} from root /donations`);
+        }
+      }
+    } catch (err) {
+      console.warn("Delete donation error:", err.message);
+    }
+  };
+
+  const updateDonation = async (donationId, updatedData) => {
+    console.log(`[UPDATE DONATION] Updating donation target: ${donationId}`, updatedData);
+
+    setDonations(prev => prev.map(d => d.id === donationId || d.receiptNo === donationId ? { ...d, ...updatedData } : d));
+
+    try {
+      const subSnap = await getDocs(collection(db, "festivals", selectedYear, "donations"));
+      for (const dSnap of subSnap.docs) {
+        if (dSnap.id === donationId || dSnap.data().receiptNo === donationId) {
+          await updateDoc(doc(db, "festivals", selectedYear, "donations", dSnap.id), updatedData);
+        }
+      }
+      const rootSnap = await getDocs(collection(db, "donations"));
+      for (const rSnap of rootSnap.docs) {
+        if (rSnap.id === donationId || rSnap.data().receiptNo === donationId) {
+          await updateDoc(doc(db, "donations", rSnap.id), updatedData);
+        }
+      }
+    } catch (err) {
+      console.warn("Update donation error:", err.message);
+    }
   };
 
   // STEP 5: ADD EXPENSE (festivals/{selectedYear}/expenses)
@@ -1141,6 +1211,8 @@ export const AppProvider = ({ children }) => {
       totalExpensesAmount,
       notifications,
       addDonation,
+      deleteDonation,
+      updateDonation,
       addExpense,
       freshSystemReset,
       t: {
